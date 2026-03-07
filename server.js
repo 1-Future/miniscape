@@ -28,6 +28,7 @@ const T = {
 const underlayRgb = {}; // id -> '#rrggbb'
 const overlayRgb = {}; // id -> { hex, texture, hideUnderlay }
 const terrainCache = new Map(); // 'cx_cy' -> Uint8Array(64*64*3) RGB per tile
+const collisionCache = new Map(); // 'cx_cy' -> Uint8Array(64*64) settings flags per tile
 
 function loadTerrainDefs() {
   try {
@@ -69,8 +70,29 @@ function loadTerrainChunk(cx, cy) {
       }
     }
     terrainCache.set(key, rgb);
+    // Cache collision settings (bit 0 = blocked)
+    if (data.settings) {
+      const flags = new Uint8Array(64 * 64);
+      for (let x = 0; x < 64; x++)
+        for (let y = 0; y < 64; y++)
+          flags[y * 64 + x] = data.settings[x][y];
+      collisionCache.set(key, flags);
+    }
     return rgb;
   } catch (e) { terrainCache.set(key, null); return null; }
+}
+
+function isOsrsBlocked(x, y) {
+  const cx = Math.floor(x / 64), cy = Math.floor(y / 64);
+  const key = `${cx}_${cy}`;
+  if (!collisionCache.has(key)) {
+    // Force load terrain to populate collision cache
+    loadTerrainChunk(cx, cy);
+  }
+  const flags = collisionCache.get(key);
+  if (!flags) return false; // No data = assume walkable
+  const lx = ((x % 64) + 64) % 64, ly = ((y % 64) + 64) % 64;
+  return (flags[ly * 64 + lx] & 1) === 1; // bit 0 = blocked
 }
 
 function loadTerrainHeights(cx, cy) {
@@ -176,6 +198,7 @@ function setColor(x, y, color) {
 function isWalkable(x, y) {
   const t = tileAt(x, y);
   if (t === T.WATER || t === T.TREE || t === T.ROCK || t === T.WALL || t === T.BUSH || t === T.DOOR) return false;
+  if (isOsrsBlocked(x, y)) return false;
   return true;
 }
 
@@ -229,18 +252,119 @@ let nextPlayerId = 1;
 let seed = 42;
 function rng() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
 
-// ── NPCs ───────────────────────────────────────────────────────────────────────
-const NPC_TYPES = [
-  { name: 'Chicken', color: '#8b1a1a', maxHp: 3, attack: 1, defence: 1, aggressive: false, xp: 12, drops: ['Feather', 'Bones', 'Raw chicken'] },
-  { name: 'Rat', color: '#8b1a1a', maxHp: 2, attack: 1, defence: 1, aggressive: true, xp: 5, drops: ['Bones'] },
-  { name: 'Cow', color: '#8b1a1a', maxHp: 8, attack: 1, defence: 1, aggressive: false, xp: 32, drops: ['Cowhide', 'Bones', 'Raw beef'] },
-  { name: 'Goblin', color: '#8b1a1a', maxHp: 5, attack: 2, defence: 1, aggressive: true, xp: 20, drops: ['Bones', 'Coins (5)'] },
-  { name: 'Spider', color: '#8b1a1a', maxHp: 3, attack: 2, defence: 1, aggressive: false, xp: 15, drops: ['Spider leg'] },
-  { name: 'Skeleton', color: '#8b1a1a', maxHp: 12, attack: 5, defence: 3, aggressive: true, xp: 40, drops: ['Bones', 'Coins (12)'] },
-  { name: 'Guard', color: '#8b1a1a', maxHp: 22, attack: 10, defence: 8, aggressive: false, xp: 80, drops: ['Coins (30)', 'Bones'] },
-  { name: 'Dark Wizard', color: '#8b1a1a', maxHp: 18, attack: 8, defence: 5, aggressive: true, xp: 60, drops: ['Coins (20)', 'Rune essence'] },
+// ── Game Definitions (from OSRS cache) ──────────────────────────────────────
+const itemDefs = new Map(); // id -> def
+const npcDefs = new Map();  // id -> def
+const ITEM_BY_NAME = new Map(); // lowercase name -> def
+
+function loadDefinitions() {
+  try {
+    const items = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'items.json'), 'utf8'));
+    for (const i of items) { itemDefs.set(i.id, i); ITEM_BY_NAME.set(i.name.toLowerCase(), i); }
+    console.log(`[defs] Loaded ${itemDefs.size} items`);
+  } catch (e) { console.log('[defs] items.json error:', e.message); }
+  try {
+    const npcsData = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'npcs.json'), 'utf8'));
+    for (const n of npcsData) npcDefs.set(n.id, n);
+    console.log(`[defs] Loaded ${npcDefs.size} NPCs`);
+  } catch (e) { console.log('[defs] npcs.json error:', e.message); }
+}
+
+// Item param keys for equipment bonuses
+const EQUIP_PARAMS = {
+  0: 'astab', 1: 'aslash', 2: 'acrush', 3: 'amagic', 4: 'aranged',
+  5: 'dstab', 6: 'dslash', 7: 'dcrush', 8: 'dmagic', 9: 'dranged',
+  10: 'str', 11: 'rstr', 13: 'prayer', 14: 'aspeed'
+};
+
+function getItemBonuses(itemId) {
+  const def = itemDefs.get(itemId);
+  if (!def || !def.params) return null;
+  const b = {};
+  for (const [paramId, key] of Object.entries(EQUIP_PARAMS)) {
+    if (def.params[paramId] !== undefined) b[key] = def.params[paramId];
+  }
+  return Object.keys(b).length > 0 ? b : null;
+}
+
+function itemName(id) { const d = itemDefs.get(id); return d ? d.name : `Item #${id}`; }
+function findItemId(name) { const d = ITEM_BY_NAME.get(name.toLowerCase()); return d ? d.id : -1; }
+
+// Equipment slots
+const EQUIP_SLOTS = ['head', 'cape', 'neck', 'weapon', 'body', 'shield', 'legs', 'hands', 'feet', 'ring', 'ammo'];
+
+function calcEquipBonuses(equipment) {
+  const total = { astab:0, aslash:0, acrush:0, amagic:0, aranged:0, dstab:0, dslash:0, dcrush:0, dmagic:0, dranged:0, str:0, rstr:0, prayer:0 };
+  for (const slot of EQUIP_SLOTS) {
+    const id = equipment[slot];
+    if (!id || id < 0) continue;
+    const b = getItemBonuses(id);
+    if (!b) continue;
+    for (const k of Object.keys(total)) if (b[k]) total[k] += b[k];
+  }
+  return total;
+}
+
+// ── NPC Spawns (from OSRS data) ─────────────────────────────────────────────
+function spawnNpcs() {
+  try {
+    const spawns = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'npc-spawns-osrs.json'), 'utf8'));
+    // Only spawn NPCs near Lumbridge initially (expand later)
+    const lumbridgeSpawns = spawns.filter(s =>
+      s.x >= 3140 && s.x <= 3330 && s.y >= 3140 && s.y <= 3330
+    );
+    let spawned = 0;
+    for (const s of lumbridgeSpawns) {
+      const def = npcDefs.get(s.id);
+      if (!def) continue;
+      if (def.combatLevel < 0 && !def.actions.includes('Attack')) continue; // skip non-combat NPCs for now
+      if (isOsrsBlocked(s.x, s.y)) continue; // don't spawn on blocked tiles
+      // Get stats from cache def
+      const stats = def.stats || [1,1,1,1,1,1]; // [atk, def, str, hp, range, mage]
+      const hp = Math.max(1, stats[3]);
+      npcs.push({
+        id: npcs.length, defId: s.id, name: def.name,
+        x: s.x, y: s.y, spawnX: s.x, spawnY: s.y,
+        hp, maxHp: hp,
+        attack: stats[0], strength: stats[2], defence: stats[1],
+        ranged: stats[4], magic: stats[5],
+        combatLevel: def.combatLevel,
+        aggressive: def.name.includes('Goblin') || def.name.includes('rat') || def.name.includes('spider') || def.name.includes('Dark wizard'),
+        dead: false, respawnTick: 0, wanderTick: Math.floor(Math.random() * 100),
+        drops: getDropTable(def),
+        color: '#8b1a1a',
+      });
+      spawned++;
+    }
+    console.log(`[npcs] Spawned ${spawned} NPCs near Lumbridge (from ${lumbridgeSpawns.length} spawn points)`);
+  } catch (e) {
+    console.log('[npcs] No npc-spawns-osrs.json found, no NPCs spawned');
+  }
+}
+
+// Basic drop tables (expand with wiki data later)
+function getDropTable(def) {
+  const drops = [];
+  const name = def.name.toLowerCase();
+  // Bones (almost everything drops bones)
+  if (def.combatLevel > 0) drops.push({ id: findItemId('Bones'), weight: 1, always: true });
+  // Specific drops by NPC name
+  if (name.includes('chicken')) { drops.push({ id: findItemId('Feather'), weight: 3 }); drops.push({ id: findItemId('Raw chicken'), weight: 1, always: true }); }
+  if (name.includes('cow')) { drops.push({ id: findItemId('Cowhide'), weight: 1, always: true }); drops.push({ id: findItemId('Raw beef'), weight: 1, always: true }); }
+  if (name.includes('goblin')) { drops.push({ id: findItemId('Coins'), weight: 2, qty: [1, 5] }); }
+  if (name.includes('guard')) { drops.push({ id: findItemId('Coins'), weight: 2, qty: [10, 30] }); }
+  if (name === 'giant rat') { drops.push({ id: findItemId('Raw rat meat'), weight: 1, always: true }); }
+  if (name.includes('spider')) { /* spiders only drop bones */ }
+  return drops;
+}
+
+// ── All 23 OSRS Skills ─────────────────────────────────────────────────────
+const ALL_SKILLS = [
+  'attack', 'strength', 'defence', 'ranged', 'prayer', 'magic', 'runecraft',
+  'hitpoints', 'crafting', 'mining', 'smithing', 'fishing', 'cooking',
+  'firemaking', 'woodcutting', 'agility', 'herblore', 'thieving', 'fletching',
+  'slayer', 'farming', 'construction', 'hunter'
 ];
-function spawnNpcs() {}
 
 // ── XP ─────────────────────────────────────────────────────────────────────────
 function xpForLevel(l) {
@@ -324,17 +448,53 @@ function broadcastTiles(changes) {
 }
 function sendChat(p, msg, color) { send(p.ws, { t: 'chat', msg, color }); }
 function sendStats(p) {
-  send(p.ws, { t: 'stats', hp: p.hp, maxHp: p.maxHp, skills: p.skills, inv: p.inventory });
+  // Send inventory with names resolved for client display
+  const inv = p.inventory.map(i => ({ id: i.id, name: itemName(i.id), count: i.count }));
+  const equip = {};
+  for (const s of EQUIP_SLOTS) {
+    if (p.equipment[s] >= 0) equip[s] = { id: p.equipment[s], name: itemName(p.equipment[s]) };
+  }
+  send(p.ws, { t: 'stats', hp: p.hp, maxHp: p.maxHp, skills: p.skills, inv, equip, bonuses: calcEquipBonuses(p.equipment) });
 }
 
-function addItem(p, name) {
+function addItemById(p, id, count = 1) {
+  if (id < 0) return false;
+  const def = itemDefs.get(id);
+  const stackable = def && def.stackable;
+  if (stackable) {
+    const ex = p.inventory.find(i => i.id === id);
+    if (ex) { ex.count += count; return true; }
+  }
   if (p.inventory.length >= 28) { sendChat(p, 'Your inventory is full.', '#f44'); return false; }
-  const ex = p.inventory.find(i => i.name === name);
-  if (ex) ex.count++; else p.inventory.push({ name, count: 1 });
+  if (stackable) {
+    p.inventory.push({ id, count });
+  } else {
+    for (let i = 0; i < count; i++) {
+      if (p.inventory.length >= 28) { sendChat(p, 'Your inventory is full.', '#f44'); return i > 0; }
+      p.inventory.push({ id, count: 1 });
+    }
+  }
   return true;
 }
+
+// Legacy name-based wrapper (for gathering/old code)
+function addItem(p, name) {
+  const id = findItemId(name);
+  if (id < 0) { // fallback: add by name for items not in cache
+    if (p.inventory.length >= 28) { sendChat(p, 'Your inventory is full.', '#f44'); return false; }
+    const ex = p.inventory.find(i => i.name === name && !i.id);
+    if (ex) ex.count++; else p.inventory.push({ id: -1, name, count: 1 });
+    return true;
+  }
+  return addItemById(p, id);
+}
+
+function dropItemGround(id, x, y, count = 1) {
+  groundItems.push({ id: nextGroundItemId++, itemId: id, name: itemName(id), x, y, count, despawnTick: tick + 167 });
+}
 function dropItem(name, x, y) {
-  groundItems.push({ id: nextGroundItemId++, name, x, y, despawnTick: tick + 167 });
+  const id = findItemId(name);
+  groundItems.push({ id: nextGroundItemId++, itemId: id, name: id >= 0 ? itemName(id) : name, x, y, count: 1, despawnTick: tick + 167 });
 }
 
 function findCluster(tx, ty) {
@@ -467,18 +627,18 @@ function createPlayer(ws) {
     for (let dx = -r; dx <= r; dx++)
       for (let dy = -r; dy <= r; dy++)
         if (isWalkable(SPAWN_X + dx, SPAWN_Y + dy)) { sx = SPAWN_X + dx; sy = SPAWN_Y + dy; r = 999; dx = 999; break; }
+  const skills = {};
+  for (const s of ALL_SKILLS) skills[s] = { xp: 0, level: 1 };
+  skills.hitpoints = { xp: 1154, level: 10 };
+  const equipment = {};
+  for (const s of EQUIP_SLOTS) equipment[s] = -1;
   return {
     id: nextPlayerId++, ws, x: sx, y: sy, hp: 10, maxHp: 10,
     gender: 'male', sentChunks: new Set(),
     path: [], gathering: null, actionTick: 0,
     combatTarget: null, clickedNpc: null, pendingPickup: null, gatherCluster: null,
-    skills: {
-      attack: { xp: 0, level: 1 }, strength: { xp: 0, level: 1 },
-      defence: { xp: 0, level: 1 }, hitpoints: { xp: 1154, level: 10 },
-      woodcutting: { xp: 0, level: 1 }, fishing: { xp: 0, level: 1 },
-      mining: { xp: 0, level: 1 },
-    },
-    inventory: [],
+    skills, equipment,
+    inventory: [], // array of { id, count } — max 28 slots
   };
 }
 
@@ -577,30 +737,45 @@ function gameTick() {
       if (!npc || npc.dead || Math.abs(p.x - npc.x) + Math.abs(p.y - npc.y) > 2) {
         p.combatTarget = null;
       } else if (tick % 4 === 0) {
-        const hitChance = Math.max(0.1, Math.min(0.95, 0.4 + p.skills.attack.level * 0.03 - (npc.defence || 1) * 0.02));
-        const maxHit = Math.max(1, p.skills.strength.level + 1);
+        // OSRS-like combat: accuracy = attRoll vs defRoll
+        const bonuses = calcEquipBonuses(p.equipment);
+        const effAtk = p.skills.attack.level + 8; // + stance bonus later
+        const attRoll = effAtk * (bonuses.aslash + 64); // simplified
+        const npcDefRoll = ((npc.defence || 1) + 8) * 64;
+        let hitChance;
+        if (attRoll > npcDefRoll) hitChance = 1 - (npcDefRoll + 2) / (2 * (attRoll + 1));
+        else hitChance = attRoll / (2 * (npcDefRoll + 1));
+        const effStr = p.skills.strength.level + 8;
+        const maxHit = Math.max(1, Math.floor(0.5 + effStr * (bonuses.str + 64) / 640));
+
         if (rng() < hitChance) {
-          const dmg = Math.floor(rng() * maxHit) + 1;
-          npc.hp -= dmg;
-          sendChat(p, `You hit ${npc.name} for ${dmg}`, '#f44');
-          addXp(p, 'attack', Math.ceil(dmg * 2));
-          addXp(p, 'strength', Math.ceil(dmg * 2));
-        } else { sendChat(p, `You miss ${npc.name}`, '#f44'); }
+          const dmg = Math.floor(rng() * (maxHit + 1));
+          if (dmg > 0) {
+            npc.hp -= dmg;
+            sendChat(p, `You hit ${npc.name} for ${dmg}`, '#f44');
+          } else {
+            sendChat(p, `You hit ${npc.name} for 0`, '#f44');
+          }
+          // XP: 4 xp per damage in controlled style (split across atk/str/def)
+          addXp(p, 'attack', Math.ceil(dmg * 4 / 3));
+          addXp(p, 'strength', Math.ceil(dmg * 4 / 3));
+          addXp(p, 'defence', Math.ceil(dmg * 4 / 3));
+          addXp(p, 'hitpoints', Math.ceil(dmg * 1.33));
+        } else {
+          sendChat(p, `You miss ${npc.name}`, '#f44');
+        }
         if (npc.hp <= 0) {
           npc.dead = true; npc.respawnTick = tick + 17;
-          addXp(p, 'hitpoints', Math.ceil(npc.xp * 0.33));
           sendChat(p, `You killed ${npc.name}!`, '#0f0');
-          for (const drop of npc.drops) { if (rng() > 0.3) dropItem(drop, npc.x, npc.y); }
-          p.combatTarget = null;
-        } else {
-          const npcHitChance = Math.max(0.05, Math.min(0.9, 0.3 + (npc.attack || 1) * 0.03 - p.skills.defence.level * 0.02));
-          if (rng() < npcHitChance) {
-            const npcDmg = Math.floor(rng() * Math.max(1, npc.attack || 1)) + 1;
-            p.hp -= npcDmg;
-            sendChat(p, `${npc.name} hits you for ${npcDmg}`, '#f44');
-            addXp(p, 'defence', Math.ceil(npcDmg * 2));
-            if (p.hp <= 0) killPlayer(p);
+          // Process drop table
+          for (const drop of npc.drops) {
+            if (drop.id < 0) continue;
+            if (drop.always || rng() < (1 / Math.max(1, drop.weight))) {
+              const qty = drop.qty ? (drop.qty[0] + Math.floor(rng() * (drop.qty[1] - drop.qty[0] + 1))) : 1;
+              dropItemGround(drop.id, npc.x, npc.y, qty);
+            }
           }
+          p.combatTarget = null;
         }
         p.maxHp = p.skills.hitpoints.level;
         sendStats(p);
@@ -614,7 +789,56 @@ function gameTick() {
       if (tick >= npc.respawnTick) { npc.dead = false; npc.hp = npc.maxHp; npc.x = npc.spawnX; npc.y = npc.spawnY; }
       continue;
     }
-    if (tick % 5 === npc.wanderTick % 5) {
+    // Check if any player is fighting this NPC
+    let inCombat = false;
+    for (const [, p] of players) {
+      if (p.combatTarget === npc.id) { inCombat = true; break; }
+    }
+    // Find the player fighting this NPC (for retaliation)
+    let combatant = null;
+    if (inCombat) {
+      for (const [, p] of players) {
+        if (p.combatTarget === npc.id) { combatant = p; break; }
+      }
+    }
+
+    if (inCombat && combatant) {
+      // NPC retaliates: chase and attack the player fighting it
+      const dist = Math.abs(combatant.x - npc.x) + Math.abs(combatant.y - npc.y);
+      if (dist > 1) {
+        // Chase toward the player (stay within leash range of spawn)
+        const dx = Math.sign(combatant.x - npc.x), dy = Math.sign(combatant.y - npc.y);
+        if (isWalkable(npc.x + dx, npc.y + dy) && Math.abs((npc.x + dx) - npc.spawnX) + Math.abs((npc.y + dy) - npc.spawnY) < 12) {
+          npc.x += dx; npc.y += dy;
+        }
+      }
+      if (dist <= 1 && tick % 4 === 2) {
+        // NPC attacks on offset tick (tick%4===2) so it alternates with player (tick%4===0)
+        const bonuses = calcEquipBonuses(combatant.equipment);
+        const npcAttRoll = ((npc.attack || 1) + 8) * 64;
+        const pDefRoll = (combatant.skills.defence.level + 8) * (bonuses.dslash + 64);
+        let npcHitChance;
+        if (npcAttRoll > pDefRoll) npcHitChance = 1 - (pDefRoll + 2) / (2 * (npcAttRoll + 1));
+        else npcHitChance = npcAttRoll / (2 * (pDefRoll + 1));
+        if (rng() < npcHitChance) {
+          const npcMaxHit = Math.max(1, Math.floor(((npc.strength || npc.attack || 1) + 8) * 64 / 640));
+          const dmg = Math.floor(rng() * (npcMaxHit + 1));
+          if (dmg > 0) {
+            combatant.hp -= dmg;
+            sendChat(combatant, `${npc.name} hits you for ${dmg}`, '#f44');
+            addXp(combatant, 'defence', Math.ceil(dmg * 1.33));
+            if (combatant.hp <= 0) killPlayer(combatant);
+          } else {
+            sendChat(combatant, `${npc.name} hits you for 0`, '#f44');
+          }
+        } else {
+          sendChat(combatant, `${npc.name} misses`, '#f44');
+        }
+        combatant.maxHp = combatant.skills.hitpoints.level;
+        sendStats(combatant);
+      }
+    } else if (!inCombat && tick % 5 === npc.wanderTick % 5) {
+      // Wander when not in combat
       const dirs = [[0,-1],[0,1],[-1,0],[1,0]];
       const [dx, dy] = dirs[Math.floor(rng() * 4)];
       const nx = npc.x + dx, ny = npc.y + dy;
@@ -622,7 +846,9 @@ function gameTick() {
         npc.x = nx; npc.y = ny;
       }
     }
-    if (npc.aggressive) {
+
+    // Aggressive NPCs also initiate combat with nearby players
+    if (npc.aggressive && !inCombat) {
       let closest = null, closestDist = 999;
       for (const [, p] of players) {
         const d = Math.abs(p.x - npc.x) + Math.abs(p.y - npc.y);
@@ -633,16 +859,24 @@ function gameTick() {
         if (isWalkable(npc.x + dx, npc.y + dy)) { npc.x += dx; npc.y += dy; }
       }
       if (closest && closestDist <= 1 && tick % 5 === 0) {
-        const npcHitChance = Math.max(0.05, Math.min(0.9, 0.3 + (npc.attack || 1) * 0.03 - closest.skills.defence.level * 0.02));
+        const bonuses = calcEquipBonuses(closest.equipment);
+        const npcAttRoll = ((npc.attack || 1) + 8) * 64;
+        const pDefRoll = (closest.skills.defence.level + 8) * (bonuses.dslash + 64);
+        let npcHitChance;
+        if (npcAttRoll > pDefRoll) npcHitChance = 1 - (pDefRoll + 2) / (2 * (npcAttRoll + 1));
+        else npcHitChance = npcAttRoll / (2 * (pDefRoll + 1));
         if (rng() < npcHitChance) {
-          const dmg = Math.floor(rng() * Math.max(1, npc.attack || 1)) + 1;
-          closest.hp -= dmg;
-          sendChat(closest, `${npc.name} hits you for ${dmg}`, '#f44');
-          addXp(closest, 'defence', Math.ceil(dmg * 2));
-          if (closest.hp <= 0) killPlayer(closest);
-          closest.maxHp = closest.skills.hitpoints.level;
-          sendStats(closest);
+          const npcMaxHit = Math.max(1, Math.floor(((npc.strength || npc.attack || 1) + 8) * 64 / 640));
+          const dmg = Math.floor(rng() * (npcMaxHit + 1));
+          if (dmg > 0) {
+            closest.hp -= dmg;
+            sendChat(closest, `${npc.name} hits you for ${dmg}`, '#f44');
+            addXp(closest, 'defence', Math.ceil(dmg * 1.33));
+            if (closest.hp <= 0) killPlayer(closest);
+          }
         }
+        closest.maxHp = closest.skills.hitpoints.level;
+        sendStats(closest);
       }
     }
   }
@@ -711,6 +945,11 @@ function handleMessage(ws, data) {
   try { msg = JSON.parse(data); } catch { return; }
 
   switch (msg.t) {
+    case 'chat': {
+      const text = (msg.msg || '').trim().slice(0, 100);
+      if (text) broadcast({ t: 'chat', msg: `Player ${p.id}: ${text}`, color: '#0000aa' });
+      break;
+    }
     case 'move': {
       const tx = Math.floor(msg.x), ty = Math.floor(msg.y);
       if (Math.abs(tx - p.x) + Math.abs(ty - p.y) > 200) { sendChat(p, 'Too far!', '#f44'); return; }
@@ -902,6 +1141,7 @@ if (fs.existsSync(NAMES_FILE)) {
   for (const [k, v] of Object.entries(obj)) customNames.set(k, v);
   console.log(`[load] ${customNames.size} custom names`);
 }
+loadDefinitions();
 spawnNpcs();
 
 setInterval(gameTick, TICK_MS);

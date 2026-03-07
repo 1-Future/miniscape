@@ -4,41 +4,159 @@
 <meta charset="UTF-8">
 <title>MiniScape</title>
 <style>
+  :root {
+    --panel-bg: #3b3024;
+    --panel-bg2: #2a2018;
+    --panel-border: #5a4a35;
+    --panel-border-light: #746248;
+    --stone: #8b7d6b;
+    --stone-col: #564e42;
+    --chat-bg: #cabfa3;
+    --gold: #ff981f;
+    --gold-bright: #ffff00;
+    --sidebar-w: 205px;
+    --chat-h: 165px;
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Courier New', monospace; }
-  canvas { image-rendering: pixelated; border: 2px solid #3e3529; }
-  #ui {
-    position: fixed; top: 10px; right: 10px; color: #ff981f; font-size: 13px;
-    background: rgba(59,50,38,0.92); border: 2px solid #3e3529; padding: 10px; min-width: 180px;
-    border-radius: 3px; pointer-events: none; z-index: 60;
+  body { background: #000; height: 100vh; overflow: hidden; font-family: 'Courier New', monospace; }
+  canvas#game { image-rendering: pixelated; position: fixed; top: 0; left: 0; z-index: 1; }
+  canvas#game3d { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 50; }
+
+  /* ── Panel System ─────────────────────────────────────────────────── */
+  .os-panel {
+    position: fixed; z-index: 60; display: none;
+    background: var(--panel-bg); border: 2px solid var(--panel-border);
+    font-family: 'Courier New', monospace; color: #ff981f; font-size: 12px;
   }
-  #ui h3 { color: #ffff00; margin-bottom: 6px; font-size: 14px; }
-  #ui .stat { margin: 2px 0; }
-  #ui .stat span { color: #00ff00; }
-  #combat-ui {
-    position: fixed; top: 10px; left: 10px; color: #ff981f; font-size: 13px;
-    background: rgba(59,50,38,0.92); border: 2px solid #3e3529; padding: 10px; min-width: 160px;
-    border-radius: 3px; display: none; z-index: 60; pointer-events: none;
+  .os-panel .drag-handle {
+    height: 6px; cursor: move; background: var(--panel-bg2);
+    border-bottom: 1px solid var(--panel-border-light);
   }
-  #combat-ui .hp-bar { width: 100%; height: 12px; background: #600; margin: 4px 0; border: 1px solid #333; }
-  #combat-ui .hp-fill { height: 100%; background: #0a0; transition: width 0.1s; }
+  .os-panel .resize-handle {
+    position: absolute; right: 0; bottom: 0; width: 12px; height: 12px; cursor: se-resize;
+    background: linear-gradient(135deg, transparent 50%, var(--panel-border-light) 50%);
+  }
+
+  /* ── Sidebar ──────────────────────────────────────────────────────── */
+  #panel-sidebar {
+    top: 0; right: 0; width: var(--sidebar-w); height: 100vh;
+    display: none; flex-direction: column; pointer-events: auto;
+  }
+
+  /* Minimap frame */
+  #minimap-frame {
+    width: 100%; aspect-ratio: 1; background: #1a1510;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; border-bottom: 2px solid var(--panel-border);
+  }
+  #minimap-canvas {
+    width: 152px; height: 152px; border-radius: 50%;
+    border: 3px solid #2a2018; image-rendering: pixelated;
+  }
+  #minimap-frame::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    border-radius: 0; background: radial-gradient(circle at center,
+      transparent 46%, #1a1510 54%);
+  }
+  #minimap-compass {
+    position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+    color: #c00; font-size: 11px; font-weight: bold; z-index: 2;
+    text-shadow: 0 0 2px #000, 0 0 2px #000;
+  }
+
+  /* Tab icon row */
+  #tab-icons {
+    display: flex; background: var(--panel-bg2);
+    border-bottom: 2px solid var(--panel-border);
+  }
+  .tab-icon {
+    flex: 1; text-align: center; padding: 5px 0; cursor: pointer;
+    font-size: 15px; border-right: 1px solid var(--panel-border);
+    background: var(--panel-bg2); transition: background 0.1s;
+    user-select: none;
+  }
+  .tab-icon:last-child { border-right: none; }
+  .tab-icon:hover { background: #4a3d2d; }
+  .tab-icon.active { background: var(--panel-bg); border-bottom: 2px solid var(--gold); margin-bottom: -2px; }
+
+  /* Tab content area (stone columns) */
+  #tab-content {
+    flex: 1; overflow-y: auto; padding: 8px;
+    background: var(--panel-bg);
+    border-left: 6px solid var(--stone-col);
+    border-right: 6px solid var(--stone-col);
+    scrollbar-width: thin; scrollbar-color: var(--stone-col) var(--panel-bg);
+  }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+  .tab-pane h3 { color: var(--gold-bright); font-size: 13px; margin-bottom: 6px; }
+  .tab-pane .stat { margin: 2px 0; }
+  .tab-pane .stat span { color: #00ff00; }
+  .tab-pane .item { color: #ccc; margin: 1px 0; }
+  .hp-bar { width: 100%; height: 14px; background: #600; margin: 4px 0; border: 1px solid #333; border-radius: 2px; }
+  .hp-fill { height: 100%; background: #0a0; transition: width 0.1s; border-radius: 1px; }
+  .inv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
+  .inv-slot {
+    aspect-ratio: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--panel-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: #ccc; text-align: center; padding: 2px;
+    min-height: 36px;
+  }
+  .inv-slot.filled { background: rgba(80,65,40,0.5); color: #ff981f; }
+  .placeholder-text { color: #666; font-size: 11px; margin-top: 8px; }
+
+  /* ── Chat Panel ───────────────────────────────────────────────────── */
+  #panel-chat {
+    bottom: 0; left: 0; width: calc(100vw - var(--sidebar-w));
+    height: var(--chat-h); display: none; flex-direction: column; pointer-events: auto;
+  }
+  #panel-chat .drag-handle { cursor: n-resize; }
   #log {
-    position: fixed; bottom: 10px; left: 10px; color: #fff; font-size: 11px;
-    background: rgba(0,0,0,0.8); border: 2px solid #3e3529; padding: 8px; width: 340px; height: 120px;
-    overflow-y: auto; border-radius: 3px; z-index: 60; pointer-events: auto;
+    flex: 1; overflow-y: auto; padding: 6px 8px;
+    background: var(--chat-bg); color: #000; font-size: 11px;
+    scrollbar-width: thin; scrollbar-color: #8a7d6b var(--chat-bg);
   }
-  #log .msg { margin: 1px 0; }
-  #inv {
-    position: fixed; bottom: 10px; right: 10px; color: #ff981f; font-size: 12px;
-    background: rgba(59,50,38,0.92); border: 2px solid #3e3529; padding: 8px; min-width: 180px;
-    border-radius: 3px; pointer-events: none; z-index: 60;
+  #log .msg { margin: 1px 0; color: #000; }
+  #chat-input-row {
+    background: var(--chat-bg); border-top: 1px solid #a89878;
+    padding: 2px 4px; display: none;
   }
-  #inv h3 { color: #ffff00; margin-bottom: 4px; font-size: 13px; }
-  #inv .item { color: #ccc; margin: 1px 0; }
+  #chat-input-row.active { display: flex; }
+  #chat-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: #000; font-family: 'Courier New', monospace; font-size: 12px;
+    padding: 2px 4px;
+  }
+  #chat-tabs {
+    display: flex; background: var(--panel-bg2);
+    border-top: 2px solid var(--panel-border);
+  }
+  .chat-tab {
+    flex: 1; text-align: center; padding: 3px 2px; cursor: pointer;
+    font-size: 10px; color: #ccc; border-right: 1px solid var(--panel-border);
+    user-select: none; line-height: 1.2;
+  }
+  .chat-tab:last-child { border-right: none; }
+  .chat-tab:hover { color: #fff; }
+  .chat-tab.active { color: var(--gold); }
+  .chat-tab small { color: #0a0; font-size: 9px; }
+  .chat-tab.report { color: #fff; background: #a02020; font-weight: bold; flex: 0.7; }
+  .chat-tab.report:hover { background: #c03030; }
+
+  /* ── Combat Overlay ───────────────────────────────────────────────── */
+  #combat-overlay {
+    position: fixed; top: 8px; left: 8px; z-index: 61;
+    background: rgba(42,32,24,0.92); border: 2px solid var(--panel-border);
+    padding: 8px 12px; min-width: 160px; display: none; color: var(--gold);
+    pointer-events: none; font-size: 12px;
+  }
+  #combat-overlay .hp-bar { margin: 4px 0; }
+
+  /* ── Toolbar ──────────────────────────────────────────────────────── */
   #toolbar {
-    position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,0.85); border: 1px solid #3e3529; border-radius: 4px;
-    padding: 6px 10px; display: flex; gap: 6px; align-items: center; z-index: 60;
+    position: fixed; bottom: 170px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.88); border: 1px solid var(--panel-border); border-radius: 4px;
+    padding: 6px 10px; display: none; gap: 6px; align-items: center; z-index: 62;
     font-family: 'Courier New', monospace; font-size: 12px; color: #ccc;
   }
   #toolbar button {
@@ -46,7 +164,7 @@
     padding: 4px 8px; cursor: pointer; font-family: inherit; font-size: 11px;
   }
   #toolbar button:hover { background: #3a3a3a; }
-  #toolbar button.active { background: #ff981f; color: #000; border-color: #ff981f; }
+  #toolbar button.active { background: var(--gold); color: #000; border-color: var(--gold); }
   #palette { display: flex; gap: 2px; margin-left: 6px; }
   #palette .swatch {
     width: 16px; height: 16px; border: 1px solid #555; cursor: pointer; border-radius: 2px;
@@ -54,9 +172,11 @@
   #palette .swatch.selected { border: 2px solid #fff; }
   #toolbar .sep { width: 1px; height: 20px; background: #555; margin: 0 4px; }
   #toolbar .current-color { width: 20px; height: 20px; border: 2px solid #fff; border-radius: 2px; }
+
+  /* ── Misc ──────────────────────────────────────────────────────────── */
   #conn {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    color: #ff981f; font-size: 18px; z-index: 100; text-align: center;
+    color: var(--gold); font-size: 18px; z-index: 100; text-align: center;
   }
   #modal-overlay {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200;
@@ -64,10 +184,10 @@
   }
   #modal-overlay.visible { display: flex; }
   #modal {
-    background: #1a1a1a; border: 1px solid #3e3529; border-radius: 6px; padding: 16px 20px;
+    background: #1a1a1a; border: 1px solid var(--panel-border); border-radius: 6px; padding: 16px 20px;
     color: #ccc; font-family: 'Courier New', monospace; min-width: 280px;
   }
-  #modal .modal-title { color: #ff981f; font-weight: bold; font-size: 14px; margin-bottom: 10px; }
+  #modal .modal-title { color: var(--gold); font-weight: bold; font-size: 14px; margin-bottom: 10px; }
   #modal input {
     width: 100%; padding: 6px 8px; background: #2a2a2a; border: 1px solid #555;
     color: #fff; font-family: inherit; font-size: 13px; border-radius: 3px; margin-bottom: 10px;
@@ -77,26 +197,88 @@
     background: #2a2a2a; color: #ccc; border: 1px solid #555; border-radius: 3px;
     padding: 4px 12px; cursor: pointer; font-family: inherit; font-size: 12px;
   }
-  #modal .modal-btns button.primary { background: #ff981f; color: #000; border-color: #ff981f; }
+  #modal .modal-btns button.primary { background: var(--gold); color: #000; border-color: var(--gold); }
 </style>
 </head>
 <body>
 <div id="conn">Connecting to server...</div>
-<div id="combat-ui">
-  <h3 id="target-name">Target</h3>
+
+<!-- Combat overlay (floating, not in a panel) -->
+<div id="combat-overlay">
+  <b id="target-name">Target</b>
   <div class="hp-bar"><div class="hp-fill" id="target-hp" style="width:100%"></div></div>
-  <div id="target-hp-text" style="color:#0a0;font-size:12px"></div>
+  <div id="target-hp-text" style="color:#0a0;font-size:11px"></div>
 </div>
-<div id="ui" style="display:none">
-  <h3>Skills</h3>
-  <div id="stats"></div>
+
+<!-- Right Sidebar: Minimap + Tabs -->
+<div id="panel-sidebar" class="os-panel">
+  <div id="minimap-frame">
+    <canvas id="minimap-canvas" width="152" height="152"></canvas>
+    <div id="minimap-compass">N</div>
+  </div>
+  <div id="tab-icons">
+    <div class="tab-icon active" data-tab="combat" title="Combat">&#9876;</div>
+    <div class="tab-icon" data-tab="stats" title="Skills">&#9733;</div>
+    <div class="tab-icon" data-tab="quest" title="Quests">&#9998;</div>
+    <div class="tab-icon" data-tab="inv" title="Inventory">&#9638;</div>
+    <div class="tab-icon" data-tab="equip" title="Equipment">&#9823;</div>
+    <div class="tab-icon" data-tab="prayer" title="Prayer">&#10022;</div>
+    <div class="tab-icon" data-tab="magic" title="Magic">&#10038;</div>
+  </div>
+  <div id="tab-content">
+    <div id="tab-combat" class="tab-pane active">
+      <h3>Combat</h3>
+      <div class="placeholder-text">Click an NPC to attack.</div>
+    </div>
+    <div id="tab-stats" class="tab-pane">
+      <h3>Skills</h3>
+      <div id="stats"></div>
+    </div>
+    <div id="tab-quest" class="tab-pane">
+      <h3>Quests</h3>
+      <div class="placeholder-text">No quests available yet.</div>
+    </div>
+    <div id="tab-inv" class="tab-pane">
+      <h3>Inventory</h3>
+      <div id="inv-list"></div>
+    </div>
+    <div id="tab-equip" class="tab-pane">
+      <h3>Equipment</h3>
+      <div class="placeholder-text">No equipment yet.</div>
+    </div>
+    <div id="tab-prayer" class="tab-pane">
+      <h3>Prayer</h3>
+      <div class="placeholder-text">No prayers yet.</div>
+    </div>
+    <div id="tab-magic" class="tab-pane">
+      <h3>Magic</h3>
+      <div class="placeholder-text">No spells yet.</div>
+    </div>
+  </div>
+  <div class="resize-handle"></div>
 </div>
-<div id="inv" style="display:none">
-  <h3>Inventory</h3>
-  <div id="inv-list"></div>
+
+<!-- Chat Panel -->
+<div id="panel-chat" class="os-panel">
+  <div class="drag-handle"></div>
+  <div id="log"></div>
+  <div id="chat-input-row">
+    <input id="chat-input" type="text" placeholder="Press Enter to chat..." maxlength="100">
+  </div>
+  <div id="chat-tabs">
+    <div class="chat-tab active" data-filter="all">All</div>
+    <div class="chat-tab" data-filter="game">Game<br><small>On</small></div>
+    <div class="chat-tab" data-filter="public">Public<br><small>On</small></div>
+    <div class="chat-tab" data-filter="private">Private<br><small>On</small></div>
+    <div class="chat-tab" data-filter="channel">Channel<br><small>On</small></div>
+    <div class="chat-tab" data-filter="clan">Clan<br><small>On</small></div>
+    <div class="chat-tab" data-filter="trade">Trade<br><small>On</small></div>
+    <div class="chat-tab report">Report</div>
+  </div>
 </div>
-<div id="log" style="display:none"></div>
-<div id="toolbar" style="display:none">
+
+<!-- Toolbar (paint tools) -->
+<div id="toolbar">
   <button id="btn-pencil" title="Pencil (P)">Pencil</button>
   <button id="btn-bucket" title="Bucket Fill (B)">Bucket</button>
   <button id="btn-bucket-all" title="Recolor all matching tiles globally">Bucket All</button>
@@ -114,6 +296,8 @@
   <div class="sep"></div>
   <span style="color:#666;font-size:10px">Ctrl+Z / Ctrl+Y</span>
 </div>
+
+<!-- Modal -->
 <div id="modal-overlay">
   <div id="modal">
     <div class="modal-title">Rename Tile Type</div>
@@ -124,8 +308,9 @@
     </div>
   </div>
 </div>
+
 <canvas id="game"></canvas>
-<canvas id="game3d" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:50;"></canvas>
+<canvas id="game3d"></canvas>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const canvas = document.getElementById('game');
@@ -137,9 +322,133 @@ const connEl = document.getElementById('conn');
 let TILE = 5;
 const MIN_TILE = 2, MAX_TILE = 64;
 const VIEW_W = 160, VIEW_H = 120;
-canvas.width = VIEW_W * TILE;
-canvas.height = VIEW_H * TILE;
-function resizeCanvas() { canvas.width = VIEW_W * TILE; canvas.height = VIEW_H * TILE; }
+
+function getGameArea() {
+  const sidebarW = document.getElementById('panel-sidebar').offsetWidth || 205;
+  const chatH = document.getElementById('panel-chat').offsetHeight || 165;
+  return { w: window.innerWidth - sidebarW, h: window.innerHeight };
+}
+function resizeCanvas() {
+  const area = getGameArea();
+  canvas.width = area.w; canvas.height = area.h;
+  canvas.style.width = area.w + 'px'; canvas.style.height = area.h + 'px';
+  TILE = Math.max(MIN_TILE, Math.min(MAX_TILE, TILE));
+}
+resizeCanvas();
+window.addEventListener('resize', () => { resizeCanvas(); });
+
+// ── Panel System: tabs, drag, resize ──────────────────────────────────────────
+let panelSystemInit = false;
+function initPanelSystem() {
+  if (panelSystemInit) return;
+  panelSystemInit = true;
+  // Tab switching
+  document.querySelectorAll('.tab-icon').forEach(icon => {
+    icon.addEventListener('click', () => {
+      document.querySelectorAll('.tab-icon').forEach(i => i.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      icon.classList.add('active');
+      const pane = document.getElementById('tab-' + icon.dataset.tab);
+      if (pane) pane.classList.add('active');
+    });
+  });
+
+  // Chat tab switching
+  document.querySelectorAll('.chat-tab[data-filter]').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.chat-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+    });
+  });
+
+  // Make sidebar resizable (drag left edge)
+  const sidebar = document.getElementById('panel-sidebar');
+  let sidebarDrag = false, sidebarStartX = 0, sidebarStartW = 0;
+  sidebar.addEventListener('mousedown', (e) => {
+    if (e.offsetX < 8) {
+      sidebarDrag = true; sidebarStartX = e.clientX; sidebarStartW = sidebar.offsetWidth;
+      e.preventDefault();
+    }
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!sidebarDrag) return;
+    const newW = Math.max(160, Math.min(400, sidebarStartW - (e.clientX - sidebarStartX)));
+    sidebar.style.width = newW + 'px';
+    document.getElementById('panel-chat').style.width = `calc(100vw - ${newW}px)`;
+    resizeCanvas();
+  });
+  window.addEventListener('mouseup', () => { sidebarDrag = false; });
+
+  // Make chat resizable (drag top edge)
+  const chat = document.getElementById('panel-chat');
+  const chatDrag = { active: false, startY: 0, startH: 0 };
+  const chatHandle = chat.querySelector('.drag-handle');
+  if (chatHandle) {
+    chatHandle.addEventListener('mousedown', (e) => {
+      chatDrag.active = true; chatDrag.startY = e.clientY; chatDrag.startH = chat.offsetHeight;
+      e.preventDefault();
+    });
+  }
+  window.addEventListener('mousemove', (e) => {
+    if (!chatDrag.active) return;
+    const newH = Math.max(80, Math.min(500, chatDrag.startH - (e.clientY - chatDrag.startY)));
+    chat.style.height = newH + 'px';
+  });
+  window.addEventListener('mouseup', () => { chatDrag.active = false; });
+
+  // Render minimap
+  updateMinimap();
+}
+
+// Minimap: renders a small overhead view of surrounding terrain
+function updateMinimap() {
+  const mc = document.getElementById('minimap-canvas');
+  if (!mc) return;
+  const mctx = mc.getContext('2d');
+  const size = 152, half = Math.floor(size / 2);
+  mctx.fillStyle = '#1a1510';
+  mctx.fillRect(0, 0, size, size);
+  // Draw terrain centered on player
+  const scale = 2; // pixels per tile
+  const range = Math.floor(half / scale);
+  for (let dy = -range; dy <= range; dy++) {
+    for (let dx = -range; dx <= range; dx++) {
+      const wx = myX + dx, wy = myY + dy;
+      const sx = half + dx * scale, sy = half - dy * scale;
+      // Check if within circle
+      if (dx * dx + dy * dy > range * range) continue;
+      const chunk = chunkCache.get(chunkKey(Math.floor(wx / CHUNK_SIZE), Math.floor(wy / CHUNK_SIZE)));
+      if (chunk && chunk.terrain) {
+        const lx = ((wx % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
+        const ly = ((wy % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
+        const ti = (ly * 64 + lx) * 3;
+        const r = chunk.terrain[ti], g = chunk.terrain[ti + 1], b = chunk.terrain[ti + 2];
+        if (r || g || b) { mctx.fillStyle = `rgb(${r},${g},${b})`; }
+        else { mctx.fillStyle = getTileColor(wx, wy, tileAt(wx, wy)); }
+      } else {
+        mctx.fillStyle = getTileColor(wx, wy, tileAt(wx, wy));
+      }
+      mctx.fillRect(sx, sy, scale, scale);
+    }
+  }
+  // Player dot
+  mctx.fillStyle = '#fff';
+  mctx.fillRect(half - 1, half - 1, 3, 3);
+  // Other players
+  for (const p of otherPlayers) {
+    const dx = p.x - myX, dy = p.y - myY;
+    if (dx * dx + dy * dy > range * range) continue;
+    mctx.fillStyle = '#00ff00';
+    mctx.fillRect(half + dx * scale, half - dy * scale, scale, scale);
+  }
+  // NPCs
+  for (const n of npcList) {
+    const dx = n.x - myX, dy = n.y - myY;
+    if (dx * dx + dy * dy > range * range) continue;
+    mctx.fillStyle = '#ffff00';
+    mctx.fillRect(half + dx * scale, half - dy * scale, scale, scale);
+  }
+}
 
 const T = {
   GRASS: 0, WATER: 1, TREE: 2, PATH: 3, ROCK: 4, SAND: 5, WALL: 6,
@@ -338,14 +647,14 @@ function handleServerMsg(msg) {
       customNameMap = msg.customNames || {};
       connected = true;
       connEl.style.display = 'none';
-      document.getElementById('ui').style.display = '';
-      document.getElementById('inv').style.display = '';
-      document.getElementById('log').style.display = '';
+      document.getElementById('panel-sidebar').style.display = 'flex';
+      document.getElementById('panel-chat').style.display = 'flex';
       document.getElementById('toolbar').style.display = 'flex';
-      showChat('Welcome to MiniScape!', '#ffff44');
-      showChat('Click to move. Click NPCs to attack.', '#ffff44');
-      showChat('Click trees to chop, rocks to mine.', '#ffff44');
-      showChat('Press M to toggle OSRS map overlay.', '#ffff44');
+      initPanelSystem();
+      showChat('Welcome to MiniScape!', '#0000cc');
+      showChat('Click to move. Click NPCs to attack.', '#0000cc');
+      showChat('Click trees to chop, rocks to mine.', '#0000cc');
+      showChat('Press M to toggle OSRS map overlay.', '#0000cc');
       break;
     case 'chunk': {
       const key = chunkKey(msg.cx, msg.cy);
@@ -420,6 +729,8 @@ function handleServerMsg(msg) {
     case 'stats':
       myStats.hp = msg.hp; myStats.maxHp = msg.maxHp;
       myStats.skills = msg.skills; myStats.inv = msg.inv;
+      if (msg.equip) myEquip = msg.equip;
+      if (msg.bonuses) myBonuses = msg.bonuses;
       updateStatsUI();
       break;
     case 'names':
@@ -441,7 +752,7 @@ function spawnHitsplat(wx, wy, text, bg, onMe) {
 }
 
 // ── UI ─────────────────────────────────────────────────────────────────────────
-function showChat(msg, color = '#ff0') {
+function showChat(msg, color = '#000') {
   const div = document.createElement('div');
   div.className = 'msg'; div.style.color = color; div.textContent = msg;
   logEl.appendChild(div);
@@ -465,25 +776,66 @@ function showChat(msg, color = '#ff0') {
 
 let combatTargetId = null;
 
+const ALL_SKILLS = [
+  'attack','hitpoints','mining',
+  'strength','agility','smithing',
+  'defence','herblore','fishing',
+  'ranged','thieving','cooking',
+  'prayer','crafting','firemaking',
+  'magic','fletching','woodcutting',
+  'runecraft','slayer','farming',
+  'construction','hunter'
+];
+let myEquip = {};
+let myBonuses = {};
+
 function updateStatsUI() {
   const s = myStats.skills;
   const hpPct = myStats.hp / myStats.maxHp;
   const statsEl = document.getElementById('stats');
-  statsEl.innerHTML =
-    `<div class="stat">HP: <span style="color:${hpPct < 0.3 ? '#f44' : '#0f0'}">${myStats.hp}/${myStats.maxHp}</span></div>` +
-    ['attack','strength','defence','hitpoints','woodcutting','fishing','mining'].map(k => {
-      const sk = s[k];
-      if (!sk) return '';
-      return `<div class="stat">${k}: <span>${sk.level}</span> (${sk.xp} xp)</div>`;
-    }).join('') +
-    `<div class="stat" style="color:#888;margin-top:4px">Online: ${otherPlayers.length + 1} · (${myX}, ${myY})</div>`;
-  invEl.innerHTML = myStats.inv.length === 0
-    ? '<div class="item" style="color:#666">Empty</div>'
-    : myStats.inv.map(i => `<div class="item">${i.name}${i.count > 1 ? ' x' + i.count : ''}</div>`).join('');
+  // OSRS-style 3-column skill display
+  let html = `<div class="stat">HP: <span style="color:${hpPct < 0.3 ? '#f44' : '#0f0'}">${myStats.hp}/${myStats.maxHp}</span></div>`;
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;margin-top:4px">';
+  for (const k of ALL_SKILLS) {
+    const sk = s[k];
+    if (!sk) { html += '<div></div>'; continue; }
+    const name = k.slice(0, 4).charAt(0).toUpperCase() + k.slice(1, 4);
+    html += `<div class="stat" style="font-size:10px" title="${k}: ${sk.xp} xp">${name} <span>${sk.level}</span></div>`;
+  }
+  html += '</div>';
+  html += `<div class="stat" style="color:#888;margin-top:4px;font-size:10px">Online: ${otherPlayers.length + 1} · (${myX}, ${myY})</div>`;
+  statsEl.innerHTML = html;
+
+  // Equipment tab
+  const equipEl = document.getElementById('tab-equip');
+  if (equipEl && myEquip) {
+    let ehtml = '<h3>Equipment</h3>';
+    const slots = ['head','cape','neck','weapon','body','shield','legs','hands','feet','ring','ammo'];
+    for (const sl of slots) {
+      const item = myEquip[sl];
+      ehtml += `<div class="stat" style="font-size:10px">${sl}: <span>${item ? item.name : '---'}</span></div>`;
+    }
+    if (myBonuses) {
+      ehtml += '<div style="margin-top:6px;font-size:10px;color:#aaa">';
+      ehtml += `Atk: ${myBonuses.aslash||0} Str: ${myBonuses.str||0} Def: ${myBonuses.dslash||0}`;
+      ehtml += '</div>';
+    }
+    equipEl.innerHTML = ehtml;
+  }
+
+  // Inventory: 4x7 grid (28 slots like OSRS)
+  let invHtml = '<div class="inv-grid">';
+  for (let i = 0; i < 28; i++) {
+    const item = myStats.inv[i];
+    if (item) invHtml += `<div class="inv-slot filled">${item.name}${item.count > 1 ? '<br>x' + item.count : ''}</div>`;
+    else invHtml += '<div class="inv-slot"></div>';
+  }
+  invHtml += '</div>';
+  invEl.innerHTML = invHtml;
 }
 
 function updateCombatUI() {
-  const el = document.getElementById('combat-ui');
+  const el = document.getElementById('combat-overlay');
   if (combatTargetId === null) { el.style.display = 'none'; return; }
   const npc = npcList.find(n => n.id === combatTargetId);
   if (!npc) { el.style.display = 'none'; combatTargetId = null; return; }
@@ -510,7 +862,7 @@ const redoStack = [];
 const MAX_UNDO = 100;
 
 function undo() {
-  if (undoStack.length === 0) { showChat('Nothing to undo.', '#888'); return; }
+  if (undoStack.length === 0) { showChat('Nothing to undo.', '#666'); return; }
   const stroke = undoStack.pop();
   sendMsg({ t: 'paint', tiles: stroke.map(s => ({ x: s.x, y: s.y, tile: s.oldTile, color: s.oldColor })) });
   for (const s of stroke) {
@@ -519,11 +871,11 @@ function undo() {
     else setLocalColor(s.x, s.y, null);
   }
   redoStack.push(stroke);
-  showChat(`Undo (${stroke.length} tiles)`, '#ff981f');
+  showChat(`Undo (${stroke.length} tiles)`, '#333');
 }
 
 function redo() {
-  if (redoStack.length === 0) { showChat('Nothing to redo.', '#888'); return; }
+  if (redoStack.length === 0) { showChat('Nothing to redo.', '#666'); return; }
   const stroke = redoStack.pop();
   sendMsg({ t: 'paint', tiles: stroke.map(s => ({ x: s.x, y: s.y, tile: s.newTile, color: s.newColor })) });
   for (const s of stroke) {
@@ -532,7 +884,7 @@ function redo() {
     else setLocalColor(s.x, s.y, null);
   }
   undoStack.push(stroke);
-  showChat(`Redo (${stroke.length} tiles)`, '#ff981f');
+  showChat(`Redo (${stroke.length} tiles)`, '#333');
 }
 
 function recordAndPaint(x, y) {
@@ -632,6 +984,46 @@ function takeScreenshot() {
 }
 document.getElementById('btn-screenshot').addEventListener('click', takeScreenshot);
 
+// ── Clip Recorder (V to record 10 seconds) ─────────────────────────────────
+let clipRecorder = null, clipChunks = [], clipRecording = false;
+
+function startRecording() {
+  if (clipRecording) { showChat('Already recording...', '#c00'); return; }
+  try {
+    const targetCanvas = mode3d ? document.getElementById('game3d') : canvas;
+    const stream = targetCanvas.captureStream(30);
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+      ? 'video/webm;codecs=vp9'
+      : MediaRecorder.isTypeSupported('video/webm;codecs=vp8')
+        ? 'video/webm;codecs=vp8'
+        : 'video/webm';
+    clipRecorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 2500000 });
+    clipChunks = [];
+    clipRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) clipChunks.push(e.data);
+    };
+    clipRecorder.onstop = () => {
+      clipRecording = false;
+      const blob = new Blob(clipChunks, { type: clipRecorder.mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `miniscape_clip_${Date.now()}.webm`;
+      link.href = url;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      showChat('Clip saved!', '#060');
+    };
+    clipRecorder.start(500);
+    clipRecording = true;
+    showChat('Recording 10s clip...', '#c00');
+    setTimeout(() => {
+      if (clipRecorder && clipRecorder.state === 'recording') clipRecorder.stop();
+    }, 10000);
+  } catch (err) {
+    showChat('Recording failed: ' + err.message, '#c00');
+  }
+}
+
 // ── Input ──────────────────────────────────────────────────────────────────────
 // Y-FLIP: OSRS y increases northward (up), screen y increases downward.
 // camTopY = highest world Y visible (top of screen).
@@ -677,24 +1069,24 @@ canvas.addEventListener('contextmenu', (e) => {
   if (!connected) return;
   const { tx, ty } = getTileAt(e);
   for (const gi of groundItemList) {
-    if (gi.x === tx && gi.y === ty) { showChat(`Examine: ${gi.name} (on ground)`, '#ff981f'); return; }
+    if (gi.x === tx && gi.y === ty) { showChat(`Examine: ${gi.name} (on ground)`, '#333'); return; }
   }
   for (const npc of npcList) {
     if (npc.x === tx && npc.y === ty) {
-      showChat(`Examine: ${npc.name} (Level ${Math.ceil(npc.maxHp / 2)}) - HP: ${npc.hp}/${npc.maxHp}`, '#ff981f'); return;
+      showChat(`Examine: ${npc.name} (Level ${Math.ceil(npc.maxHp / 2)}) - HP: ${npc.hp}/${npc.maxHp}`, '#333'); return;
     }
   }
   for (const p of otherPlayers) {
-    if (p.x === tx && p.y === ty) { showChat(`Examine: Player ${p.id}`, '#ff981f'); return; }
+    if (p.x === tx && p.y === ty) { showChat(`Examine: Player ${p.id}`, '#333'); return; }
   }
-  if (tx === myX && ty === myY) { showChat('Examine: Yourself - looking strong.', '#ff981f'); return; }
+  if (tx === myX && ty === myY) { showChat('Examine: Yourself - looking strong.', '#333'); return; }
   const tile = tileAt(tx, ty);
   if (openDoorList.some(d => (d.sx === tx && d.sy === ty) || (d.ox === tx && d.oy === ty))) {
-    showChat('Examine: An open door.', '#ff981f'); return;
+    showChat('Examine: An open door.', '#333'); return;
   }
   const customName = getExamineName(tx, ty);
-  if (customName) showChat(`Examine: ${customName}`, '#ff981f');
-  else showChat(`Examine: ${EXAMINE[tile] || 'Nothing interesting.'}`, '#ff981f');
+  if (customName) showChat(`Examine: ${customName}`, '#333');
+  else showChat(`Examine: ${EXAMINE[tile] || 'Nothing interesting.'}`, '#333');
 });
 
 canvas.addEventListener('mousedown', (e) => {
@@ -705,9 +1097,9 @@ canvas.addEventListener('mousedown', (e) => {
       new EyeDropper().open().then(r => {
         customBrushColor = r.sRGBHex; paintTile = T.CUSTOM; updatePaintUI();
         navigator.clipboard.writeText(customBrushColor).catch(() => {});
-        showChat(`Picked & copied: ${customBrushColor}`, '#ff981f');
+        showChat(`Picked & copied: ${customBrushColor}`, '#333');
       }).catch(() => {});
-    } else { paintTile = tileAt(tx, ty); updatePaintUI(); showChat(`Picked: ${TILE_NAMES[paintTile] || 'Unknown'}`, '#ff981f'); }
+    } else { paintTile = tileAt(tx, ty); updatePaintUI(); showChat(`Picked: ${TILE_NAMES[paintTile] || 'Unknown'}`, '#333'); }
     return;
   }
   if (paintTool === 'bucket' || paintTool === 'bucket_all') {
@@ -770,7 +1162,41 @@ canvas.addEventListener('mousemove', (e) => {
 
 // WASD state for 3D movement
 const keysDown = new Set();
+let chatActive = false;
+const chatInput = document.getElementById('chat-input');
+const chatInputRow = document.getElementById('chat-input-row');
+
 document.addEventListener('keydown', (e) => {
+  // Chat input handling
+  if (e.key === 'Enter') {
+    if (chatActive) {
+      const msg = chatInput.value.trim();
+      if (msg) {
+        sendMsg({ t: 'chat', msg });
+      }
+      chatInput.value = '';
+      chatInput.blur();
+      chatInputRow.classList.remove('active');
+      chatActive = false;
+    } else {
+      chatActive = true;
+      chatInputRow.classList.add('active');
+      chatInput.focus();
+    }
+    e.preventDefault();
+    return;
+  }
+  if (e.key === 'Escape' && chatActive) {
+    chatInput.value = '';
+    chatInput.blur();
+    chatInputRow.classList.remove('active');
+    chatActive = false;
+    e.preventDefault();
+    return;
+  }
+  // When chat is focused, don't process game keys
+  if (chatActive) return;
+
   keysDown.add(e.key.toLowerCase());
   if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); return; }
   if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) { e.preventDefault(); redo(); return; }
@@ -786,7 +1212,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 't' || e.key === 'T') {
     myGender = myGender === 'male' ? 'female' : 'male';
     sendMsg({ t: 'gender', v: myGender });
-    showChat(`Gender: ${myGender}`, '#ff981f');
+    showChat(`Gender: ${myGender}`, '#333');
   }
   if (e.key === 'g' || e.key === 'G') {
     showGrid = !showGrid;
@@ -796,26 +1222,26 @@ document.addEventListener('keydown', (e) => {
       for (const [, mesh] of terrain3dMeshes) {
         mesh.children.forEach(c => { c.visible = showGrid; });
       }
-      showChat(showGrid ? 'Grid ON (G to toggle)' : 'Grid OFF (G to toggle)', '#ff981f');
+      showChat(showGrid ? 'Grid ON (G to toggle)' : 'Grid OFF (G to toggle)', '#333');
     }
   }
   if (e.key === 'e' || e.key === 'E') {
     showElevation = !showElevation;
-    showChat(showElevation ? 'Elevation overlay ON (E to toggle)' : 'Elevation overlay OFF', '#ff981f');
+    showChat(showElevation ? 'Elevation overlay ON (E to toggle)' : 'Elevation overlay OFF', '#333');
   }
   if (e.key === 'c' || e.key === 'C') {
     showCollision = !showCollision;
-    showChat(showCollision ? 'Collision overlay ON (C to toggle)' : 'Collision overlay OFF', '#ff981f');
+    showChat(showCollision ? 'Collision overlay ON (C to toggle)' : 'Collision overlay OFF', '#333');
   }
   if (e.key === 'r') {
     showTerrainColors = !showTerrainColors;
-    showChat(showTerrainColors ? 'Terrain colors ON (R to toggle)' : 'Terrain colors OFF', '#ff981f');
+    showChat(showTerrainColors ? 'Terrain colors ON (R to toggle)' : 'Terrain colors OFF', '#333');
   }
   if (e.key === '3') { toggle3D(); }
   if (mode3d && (e.key === 'f' || e.key === 'F')) {
     freeRoam3d = !freeRoam3d;
     if (!freeRoam3d) { cam3dTargetX = myX + 0.5; cam3dTargetZ = -(myY + 0.5); }
-    showChat(freeRoam3d ? 'Free roam ON (WASD to move, F to lock back)' : 'Locked to player (F for free roam)', '#ff981f');
+    showChat(freeRoam3d ? 'Free roam ON (WASD to move, F to lock back)' : 'Locked to player (F for free roam)', '#333');
   }
   if (mode3d && (e.key === ']' || e.key === '[')) {
     if (e.key === ']') heightScale *= 1.3;
@@ -824,13 +1250,14 @@ document.addEventListener('keydown', (e) => {
     terrain3dBuilt.clear();
     for (const [k, m] of terrain3dMeshes) { scene3d.remove(m); m.geometry.dispose(); }
     terrain3dMeshes.clear();
-    showChat(`Height scale: ${heightScale.toFixed(4)} ([ decrease, ] increase)`, '#ff981f');
+    showChat(`Height scale: ${heightScale.toFixed(4)} ([ decrease, ] increase)`, '#333');
   }
   if (e.key === 'm' || e.key === 'M') {
     showOsrsMap = !showOsrsMap;
-    showChat(showOsrsMap ? 'OSRS map overlay ON (M to toggle)' : 'OSRS map overlay OFF', '#ff981f');
+    showChat(showOsrsMap ? 'OSRS map overlay ON (M to toggle)' : 'OSRS map overlay OFF', '#333');
   }
   if (e.key === 'p' || e.key === 'P') { if (mode3d || !paintTool) { e.preventDefault(); takeScreenshot(); return; } }
+  if (e.key === 'v' || e.key === 'V') { e.preventDefault(); startRecording(); return; }
   if (e.key === 'Escape') {
     paintTool = null; updatePaintUI();
     const modal = document.getElementById('modal-overlay');
@@ -843,6 +1270,7 @@ document.addEventListener('keydown', (e) => {
       'Scroll — Zoom in/out',
       '[ / ] — Height scale down/up',
       'P — Screenshot',
+      'V — Record 10s clip',
       'R — Toggle terrain colors',
       'E — Toggle elevation overlay',
       'M — Toggle OSRS map overlay',
@@ -860,13 +1288,14 @@ document.addEventListener('keydown', (e) => {
       'M — Toggle OSRS map overlay',
       'T — Toggle gender',
       'P — Screenshot',
+      'V — Record 10s clip',
       'Ctrl+Z / Ctrl+Y — Undo / Redo',
       '3 — Enter 3D mode',
       'ESC — Show this help',
     ];
-    showChat('─── Hotkeys ───', '#ff981f');
-    for (const k of keys) showChat(k, '#ccc');
-    showChat('───────────', '#ff981f');
+    showChat('─── Hotkeys ───', '#333');
+    for (const k of keys) showChat(k, '#444');
+    showChat('───────────', '#333');
   }
 });
 document.addEventListener('keyup', (e) => { keysDown.delete(e.key.toLowerCase()); });
@@ -1432,6 +1861,7 @@ function render() {
   }
 
   updateCombatUI();
+  updateMinimap();
   requestAnimationFrame(render);
 }
 
@@ -1827,6 +2257,10 @@ function drawCompass3D() {
 
 function toggle3D() {
   mode3d = !mode3d;
+  // Stop any active recording when switching modes
+  if (clipRecording && clipRecorder && clipRecorder.state === 'recording') {
+    try { clipRecorder.stop(); } catch(e){}
+  }
   const c2d = document.getElementById('game');
   const c3d = document.getElementById('game3d');
   if (mode3d) {
@@ -1843,7 +2277,7 @@ function toggle3D() {
     terrain3dBuilt.clear();
     for (const [k, m] of terrain3dMeshes) { scene3d.remove(m); m.geometry.dispose(); }
     terrain3dMeshes.clear();
-    showChat('3D Mode ON (WASD move, drag orbit, scroll zoom, [/] height, P screenshot)', '#ff981f');
+    showChat('3D Mode ON (WASD move, drag orbit, scroll zoom, [/] height, P screenshot)', '#333');
     (function animate3d() {
       if (!mode3d) return;
       update3D();
@@ -1852,7 +2286,7 @@ function toggle3D() {
   } else {
     c2d.style.display = '';
     c3d.style.display = 'none';
-    showChat('3D Mode OFF', '#ff981f');
+    showChat('3D Mode OFF', '#333');
     const cc = document.getElementById('compass3d');
     if (cc) cc.style.display = 'none';
   }
