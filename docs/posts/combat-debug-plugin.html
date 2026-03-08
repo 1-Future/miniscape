@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Combat Debug Plugin — MiniScape Devlog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0a0e0d; --bg-card: #111916; --border: #1e2e24; --border-accent: #2a4a32;
+  --gold: #d4a853; --green: #22c55e; --red: #ef4444; --cyan: #06b6d4; --purple: #c084fc;
+  --text: #c8d0cc; --text-dim: #6b7e72; --text-bright: #e8f0ec;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Crimson Text', Georgia, serif; font-size: 19px; line-height: 1.8; min-height: 100vh; }
+body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 999; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); }
+.site-header { border-bottom: 1px solid var(--border); padding: 24px 0; position: sticky; top: 0; background: rgba(10, 14, 13, 0.92); backdrop-filter: blur(12px); z-index: 100; }
+.header-inner { max-width: 720px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; }
+.site-logo { font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; color: var(--gold); text-decoration: none; letter-spacing: 2px; text-transform: uppercase; }
+.site-logo span { color: var(--text-dim); font-weight: 400; font-size: 14px; margin-left: 12px; letter-spacing: 3px; }
+.back-link { color: var(--text-dim); text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 1px; transition: color 0.2s; }
+.back-link:hover { color: var(--gold); }
+article { max-width: 720px; margin: 0 auto; padding: 64px 32px 80px; }
+.post-tag { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; padding: 3px 10px; border-radius: 3px; margin-bottom: 16px; background: rgba(192, 132, 252, 0.12); color: var(--purple); border: 1px solid rgba(192, 132, 252, 0.2); }
+.post-date { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text-dim); margin-bottom: 24px; }
+article h1 { font-family: 'Cinzel', serif; font-size: 40px; font-weight: 700; color: var(--text-bright); line-height: 1.2; margin-bottom: 12px; }
+article h2 { font-family: 'Cinzel', serif; font-size: 24px; font-weight: 600; color: var(--gold); margin: 48px 0 16px; }
+article p { margin-bottom: 20px; }
+article strong { color: var(--text-bright); }
+article em { color: var(--gold); font-style: italic; }
+article ul, article ol { margin: 0 0 20px 24px; }
+article li { margin-bottom: 6px; }
+article code { font-family: 'JetBrains Mono', monospace; font-size: 15px; background: var(--bg-card); border: 1px solid var(--border); padding: 2px 6px; border-radius: 3px; color: var(--cyan); }
+article pre { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 20px 24px; margin: 0 0 24px; overflow-x: auto; }
+article pre code { background: none; border: none; padding: 0; font-size: 14px; color: var(--text); line-height: 1.6; }
+blockquote { border-left: 3px solid rgba(212, 168, 83, 0.4); padding-left: 20px; margin: 0 0 24px; color: var(--text-dim); font-style: italic; }
+.site-footer { border-top: 1px solid var(--border); padding: 32px 0; text-align: center; }
+.site-footer p { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); letter-spacing: 1px; }
+@media (max-width: 640px) { article h1 { font-size: 28px; } .header-inner { flex-direction: column; gap: 12px; } }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a href="../" class="site-logo">MiniScape <span>Devlog</span></a>
+    <a href="../" class="back-link">&larr; All Posts</a>
+  </div>
+</header>
+<article>
+  <div class="post-tag">RuneLite</div>
+  <h1>Combat Debug Plugin — Capturing Real OSRS Data</h1>
+  <div class="post-date">5 March 2026</div>
+
+  <p>How do you build an authentic OSRS experience without access to the source code? You build a spy. The Combat Debug Plugin is a RuneLite plugin that intercepts and logs every meaningful game event in real-time.</p>
+
+  <h2>Why RuneLite?</h2>
+
+  <p><strong>RuneLite</strong> is the most popular open-source OSRS client. It exposes a rich plugin API that hooks into the game's event system — NPC spawns, combat events, inventory changes, XP gains, animations, and more. It's the botting community's best friend, and now it's ours too.</p>
+
+  <h2>What the Plugin Does</h2>
+
+  <p>The Combat Debug Plugin subscribes to RuneLite events and logs structured data:</p>
+
+  <pre><code>@Subscribe
+public void onHitsplatApplied(HitsplatApplied event) {
+    Actor actor = event.getActor();
+    Hitsplat hitsplat = event.getHitsplat();
+    debugLog(String.format("Hitsplat: %s took %d damage (type: %s)",
+        actor.getName(), hitsplat.getAmount(), hitsplat.getHitsplatType()));
+}
+
+@Subscribe
+public void onAnimationChanged(AnimationChanged event) {
+    Actor actor = event.getActor();
+    if (actor instanceof Player) {
+        debugLog("Player animation: " + actor.getAnimation());
+    }
+}
+
+@Subscribe
+public void onStatChanged(StatChanged event) {
+    debugLog(String.format("XP: %s +%d (total: %d, level: %d)",
+        event.getSkill(), xpGained, event.getXp(), event.getLevel()));
+}</code></pre>
+
+  <h2>File Logging</h2>
+
+  <p>Early on, we lost data when RuneLite crashed. Now everything is written to <code>~/.runelite/combat-debug.log</code> with append mode — sessions accumulate, nothing is lost.</p>
+
+  <pre><code>private PrintWriter logWriter;
+
+@Override
+protected void startUp() {
+    File logFile = new File(
+        RuneLiteAPI.RUNELITE_DIR, "combat-debug.log");
+    logWriter = new PrintWriter(
+        new FileWriter(logFile, true)); // append mode
+    logWriter.println("=== SESSION START: " +
+        LocalDateTime.now() + " ===");
+}</code></pre>
+
+  <h2>Data Captured So Far</h2>
+
+  <ul>
+    <li><strong>1,474 lines</strong> from a complete Tutorial Island playthrough</li>
+    <li><strong>10 NPC definitions</strong> with IDs, positions, and combat levels</li>
+    <li><strong>All skill animations</strong> — fishing (621), woodcutting (879), firemaking (733), etc.</li>
+    <li><strong>Combat formulas</strong> — melee (386), ranged (426), magic (711)</li>
+    <li><strong>XP values</strong> — exact gains for every tutorial action</li>
+    <li><strong>Complete inventory tracking</strong> — every item received and used</li>
+  </ul>
+
+  <blockquote>The plugin doesn't play the game for us. It watches us play and writes down everything that happens. We do the playing — it does the remembering.</blockquote>
+</article>
+<footer class="site-footer">
+  <p>MiniScape &mdash; 1-Future &mdash; 2026</p>
+</footer>
+</body>
+</html>

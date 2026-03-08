@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSRS Sync — Real-Time Data Mirroring — MiniScape Devlog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0a0e0d; --bg-card: #111916; --border: #1e2e24; --border-accent: #2a4a32;
+  --gold: #d4a853; --green: #22c55e; --red: #ef4444; --cyan: #06b6d4; --purple: #c084fc;
+  --text: #c8d0cc; --text-dim: #6b7e72; --text-bright: #e8f0ec;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Crimson Text', Georgia, serif; font-size: 19px; line-height: 1.8; min-height: 100vh; }
+body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 999; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); }
+
+.site-header { border-bottom: 1px solid var(--border); padding: 24px 0; position: sticky; top: 0; background: rgba(10, 14, 13, 0.92); backdrop-filter: blur(12px); z-index: 100; }
+.header-inner { max-width: 720px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; }
+.site-logo { font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; color: var(--gold); text-decoration: none; letter-spacing: 2px; text-transform: uppercase; }
+.site-logo span { color: var(--text-dim); font-weight: 400; font-size: 14px; margin-left: 12px; letter-spacing: 3px; }
+.back-link { color: var(--text-dim); text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 1px; transition: color 0.2s; }
+.back-link:hover { color: var(--gold); }
+
+article { max-width: 720px; margin: 0 auto; padding: 64px 32px 80px; }
+.post-tag { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; padding: 3px 10px; border-radius: 3px; margin-bottom: 16px; background: rgba(6, 182, 212, 0.12); color: var(--cyan); border: 1px solid rgba(6, 182, 212, 0.2); }
+.post-date { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text-dim); margin-bottom: 24px; }
+article h1 { font-family: 'Cinzel', serif; font-size: 40px; font-weight: 700; color: var(--text-bright); line-height: 1.2; margin-bottom: 12px; }
+article h2 { font-family: 'Cinzel', serif; font-size: 24px; font-weight: 600; color: var(--gold); margin: 48px 0 16px; }
+article p { margin-bottom: 20px; }
+article strong { color: var(--text-bright); }
+article em { color: var(--gold); font-style: italic; }
+article ul, article ol { margin: 0 0 20px 24px; }
+article li { margin-bottom: 6px; }
+article code { font-family: 'JetBrains Mono', monospace; font-size: 15px; background: var(--bg-card); border: 1px solid var(--border); padding: 2px 6px; border-radius: 3px; color: var(--cyan); }
+article pre { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 20px 24px; margin: 0 0 24px; overflow-x: auto; }
+article pre code { background: none; border: none; padding: 0; font-size: 14px; color: var(--text); line-height: 1.6; }
+blockquote { border-left: 3px solid rgba(212, 168, 83, 0.4); padding-left: 20px; margin: 0 0 24px; color: var(--text-dim); font-style: italic; }
+
+.site-footer { border-top: 1px solid var(--border); padding: 32px 0; text-align: center; }
+.site-footer p { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); letter-spacing: 1px; }
+
+@media (max-width: 640px) { article h1 { font-size: 28px; } .header-inner { flex-direction: column; gap: 12px; } }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="../" class="site-logo">MiniScape <span>Devlog</span></a>
+    <a href="../" class="back-link">&larr; All Posts</a>
+  </div>
+</header>
+
+<article>
+  <div class="post-tag">Engine</div>
+  <h1>OSRS Sync — Real-Time Data Mirroring</h1>
+  <div class="post-date">7 March 2026</div>
+
+  <p>Most private servers guess at game values or copy them from wikis. MiniScape takes a different approach: we capture data directly from the live game and mirror it into our server. No interpretation, no estimation — raw ground truth.</p>
+
+  <h2>The Pipeline</h2>
+
+  <p>The data capture pipeline has three stages:</p>
+
+  <ol>
+    <li><strong>Capture</strong> — A RuneLite plugin intercepts game events in real-time</li>
+    <li><strong>Log</strong> — Events are written to <code>~/.runelite/combat-debug.log</code> with timestamps</li>
+    <li><strong>Extract</strong> — We parse the log and encode values into MiniScape's data files</li>
+  </ol>
+
+  <h2>What We Capture</h2>
+
+  <p>The Combat Debug Plugin hooks into RuneLite's event system to capture:</p>
+
+  <ul>
+    <li><strong>NPC definitions</strong> — ID, name, combat level, position, animations</li>
+    <li><strong>Combat events</strong> — attack animations, hitsplats, damage values, projectile IDs</li>
+    <li><strong>Inventory changes</strong> — item IDs, quantities, slot positions</li>
+    <li><strong>Skill XP</strong> — exact XP gains per action</li>
+    <li><strong>Player stats</strong> — levels, equipment bonuses, attack styles</li>
+    <li><strong>Animations</strong> — IDs for every action (fishing, woodcutting, cooking, etc.)</li>
+    <li><strong>Coordinates</strong> — exact tile positions for NPCs, objects, and the player</li>
+  </ul>
+
+  <h2>Log Format</h2>
+
+  <p>Each log entry is timestamped and categorized:</p>
+
+  <pre><code>[14:32:05] === SESSION START ===
+[14:32:08] Skills: Attack=1 Strength=1 Defence=1 ...
+[14:33:15] NPC interaction: Gielinor Guide (id=3308) at (3095, 3106)
+[14:34:22] Inventory: +1 Small fishing net (303)
+[14:35:01] Animation: 621 (fishing)
+[14:35:04] XP: Fishing +10 (total: 10)
+[14:36:12] Combat: hit 1 on Giant rat (anim: 386)</code></pre>
+
+  <h2>Why Not Just Read the Wiki?</h2>
+
+  <p>The OSRS Wiki is excellent, but it has limitations:</p>
+  <ul>
+    <li>Animation IDs aren't documented for most actions</li>
+    <li>Exact XP values for tutorial-specific actions aren't always listed</li>
+    <li>NPC positions on Tutorial Island differ from their post-tutorial versions</li>
+    <li>Projectile travel times and delay formulas need empirical verification</li>
+    <li>The wiki documents <em>what</em> happens — we need to know <em>exactly when</em> it happens, down to the tick</li>
+  </ul>
+
+  <blockquote>The log file is the single source of truth. If MiniScape behaves differently from what the log says, MiniScape is wrong.</blockquote>
+</article>
+
+<footer class="site-footer">
+  <p>MiniScape &mdash; 1-Future &mdash; 2026</p>
+</footer>
+
+</body>
+</html>

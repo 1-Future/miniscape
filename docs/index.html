@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiniScape Devlog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0a0e0d;
+  --bg-card: #111916;
+  --bg-card-hover: #162018;
+  --border: #1e2e24;
+  --border-accent: #2a4a32;
+  --gold: #d4a853;
+  --gold-dim: #a07830;
+  --green: #22c55e;
+  --red: #ef4444;
+  --cyan: #06b6d4;
+  --purple: #c084fc;
+  --text: #c8d0cc;
+  --text-dim: #6b7e72;
+  --text-bright: #e8f0ec;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Crimson Text', Georgia, serif;
+  font-size: 18px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+/* ── Grain overlay ──────────────────────────── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* ── Header ──────────────────────────────────── */
+.site-header {
+  border-bottom: 1px solid var(--border);
+  padding: 24px 0;
+  position: sticky;
+  top: 0;
+  background: rgba(10, 14, 13, 0.92);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+}
+
+.header-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.site-logo {
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold);
+  text-decoration: none;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.site-logo span {
+  color: var(--text-dim);
+  font-weight: 400;
+  font-size: 14px;
+  margin-left: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.header-links {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.header-links a {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 1px;
+  transition: color 0.2s;
+}
+
+.header-links a:hover {
+  color: var(--gold);
+}
+
+/* ── Hero ─────────────────────────────────────── */
+.hero {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 80px 32px 48px;
+}
+
+.hero h1 {
+  font-family: 'Cinzel', serif;
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--text-bright);
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.hero h1 em {
+  font-style: normal;
+  color: var(--gold);
+}
+
+.hero p {
+  font-size: 20px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+
+/* ── Post list ────────────────────────────────── */
+.posts {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 32px 80px;
+}
+
+.post-card {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 32px;
+  padding: 32px 0;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s;
+  position: relative;
+}
+
+.post-card:first-child {
+  border-top: 1px solid var(--border);
+}
+
+.post-card:hover {
+  background: var(--bg-card);
+}
+
+.post-card:hover .post-title {
+  color: var(--gold);
+}
+
+.post-meta {
+  text-align: right;
+  padding-top: 4px;
+}
+
+.post-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.post-day {
+  font-family: 'Cinzel', serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--border-accent);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.post-content {
+  min-width: 0;
+}
+
+.post-tag {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 3px;
+  margin-bottom: 8px;
+}
+
+.tag-feature { background: rgba(34, 197, 94, 0.12); color: var(--green); border: 1px solid rgba(34, 197, 94, 0.2); }
+.tag-combat { background: rgba(239, 68, 68, 0.12); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.2); }
+.tag-engine { background: rgba(6, 182, 212, 0.12); color: var(--cyan); border: 1px solid rgba(6, 182, 212, 0.2); }
+.tag-architecture { background: rgba(212, 168, 83, 0.12); color: var(--gold); border: 1px solid rgba(212, 168, 83, 0.2); }
+.tag-world { background: rgba(136, 153, 170, 0.12); color: #8899aa; border: 1px solid rgba(136, 153, 170, 0.2); }
+.tag-runelite { background: rgba(192, 132, 252, 0.12); color: var(--purple); border: 1px solid rgba(192, 132, 252, 0.2); }
+
+.post-title {
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 8px;
+  transition: color 0.2s;
+  line-height: 1.3;
+}
+
+.post-excerpt {
+  color: var(--text-dim);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+/* ── Footer ───────────────────────────────────── */
+.site-footer {
+  border-top: 1px solid var(--border);
+  padding: 32px 0;
+  text-align: center;
+}
+
+.site-footer p {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+/* ── Animations ───────────────────────────────── */
+.fade-up {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeUp 0.6s ease forwards;
+}
+
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up:nth-child(1) { animation-delay: 0.05s; }
+.fade-up:nth-child(2) { animation-delay: 0.1s; }
+.fade-up:nth-child(3) { animation-delay: 0.15s; }
+.fade-up:nth-child(4) { animation-delay: 0.2s; }
+.fade-up:nth-child(5) { animation-delay: 0.25s; }
+.fade-up:nth-child(6) { animation-delay: 0.3s; }
+.fade-up:nth-child(7) { animation-delay: 0.35s; }
+
+/* ── Responsive ───────────────────────────────── */
+@media (max-width: 640px) {
+  .hero h1 { font-size: 32px; }
+  .post-card { grid-template-columns: 1fr; gap: 8px; }
+  .post-meta { text-align: left; display: flex; gap: 8px; align-items: baseline; }
+  .post-day { font-size: 18px; }
+  .header-inner { flex-direction: column; gap: 12px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="./" class="site-logo">MiniScape <span>Devlog</span></a>
+    <nav class="header-links">
+      <a href="https://github.com/1-Future/miniscape">GitHub</a>
+      <a href="https://github.com/1-Future/miniscape/issues">Issues</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <h1>Building <em>MiniScape</em></h1>
+  <p>An OSRS-authentic private server built from real game data. Every mechanic captured, every tick verified.</p>
+</div>
+
+<div class="posts">
+
+  <a href="posts/tutorial-island.html" class="post-card fade-up">
+    <div class="post-meta">
+      <div class="post-day">07</div>
+      <div class="post-date">Mar<br>2026</div>
+    </div>
+    <div class="post-content">
+      <div class="post-tag tag-feature">Feature</div>
+      <div class="post-title">Tutorial Island Launch</div>
+      <div class="post-excerpt">Full 26-step Tutorial Island built from a real OSRS playthrough. Every NPC, every dialogue, every item — captured and replicated tick-for-tick.</div>
+    </div>
+  </a>
+
+  <a href="posts/combat-system.html" class="post-card fade-up">
+    <div class="post-meta">
+      <div class="post-day">07</div>
+      <div class="post-date">Mar<br>2026</div>
+    </div>
+    <div class="post-content">
+      <div class="post-tag tag-combat">Combat</div>
+      <div class="post-title">OSRS Combat Styles & Projectile Delays</div>
+      <div class="post-excerpt">Melee, ranged, and magic combat with authentic attack speeds, projectile travel times, and XP distribution. All values captured from real combat encounters.</div>
+    </div>
+  </a>
+
+  <a href="posts/osrs-sync.html" class="post-card fade-up">
+    <div class="post-meta">
+      <div class="post-day">07</div>
+      <div class="post-date">Mar<br>2026</div>
+    </div>
+    <div class="post-content">
+      <div class="post-tag tag-engine">Engine</div>
+      <div class="post-title">OSRS Sync — Real-Time Data Mirroring</div>
+      <div class="post-excerpt">A RuneLite plugin that captures every game event — combat formulas, NPC stats, item IDs, animations — and streams them into MiniScape's data layer.</div>
+    </div>
+  </a>
+
+  <a href="posts/tick-queue.html" class="post-card fade-up">
+    <div class="post-meta">
+      <div class="post-day">06</div>
+      <div class="post-date">Mar<br>2026</div>
+    </div>
+    <div class="post-content">
+      <div class="post-tag tag-architecture">Architecture</div>
+      <div class="post-title">Tick Queue System — OSRS-Authentic Scheduling</div>
+      <div class="post-excerpt">OSRS runs at 0.6s ticks. Our server replicates this exactly — every action, every delay, every queue priority matches the real game engine.</div>
+    </div>
+  </a>
+
+  <a href="posts/lumbridge-terrain.html" class="post-card fade-up">
+    <div class="post-meta">
+      <div class="post-day">05</div>
+      <div class="post-date">Mar<br>2026</div>
+    </div>
+    <div class="post-content">
+      <div class="post-tag tag-world">World</div>
+      <div class="post-title">Lumbridge & Terrain Rendering from OSRS Cache</div>
+      <div class="post-excerpt">Parsing the OSRS cache to extract real terrain data, collision maps, and object placements. The world rendered tile-by-tile in the browser.</div>
+    </div>
+  </a>
+
+  <a href="posts/combat-debug-plugin.html" class="post-card fade-up">
+    <div class="post-meta">
+      <div class="post-day">05</div>
+      <div class="post-date">Mar<br>2026</div>
+    </div>
+    <div class="post-content">
+      <div class="post-tag tag-runelite">RuneLite</div>
+      <div class="post-title">Combat Debug Plugin — Capturing Real OSRS Data</div>
+      <div class="post-excerpt">Building a RuneLite plugin to intercept and log every combat event, NPC interaction, and game tick. The foundation of data-driven development.</div>
+    </div>
+  </a>
+
+</div>
+
+<footer class="site-footer">
+  <p>MiniScape &mdash; 1-Future &mdash; 2026</p>
+</footer>
+
+</body>
+</html>

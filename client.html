@@ -229,6 +229,9 @@
     <div id="tab-combat" class="tab-pane active">
       <h3>Combat</h3>
       <div class="placeholder-text">Click an NPC to attack.</div>
+      <div style="margin-top:8px;">
+        <button id="btn-auto-retaliate" style="background:#3a3;color:#fff;border:1px solid #2a2;padding:4px 10px;cursor:pointer;font:12px monospace;">Auto Retaliate: ON</button>
+      </div>
     </div>
     <div id="tab-stats" class="tab-pane">
       <h3>Skills</h3>
@@ -351,6 +354,16 @@ function initPanelSystem() {
       const pane = document.getElementById('tab-' + icon.dataset.tab);
       if (pane) pane.classList.add('active');
     });
+  });
+
+  // Auto-retaliate toggle
+  let autoRetaliateOn = true;
+  document.getElementById('btn-auto-retaliate').addEventListener('click', () => {
+    autoRetaliateOn = !autoRetaliateOn;
+    const btn = document.getElementById('btn-auto-retaliate');
+    btn.textContent = `Auto Retaliate: ${autoRetaliateOn ? 'ON' : 'OFF'}`;
+    btn.style.background = autoRetaliateOn ? '#3a3' : '#a33';
+    sendMsg({ t: 'autoRetaliate' });
   });
 
   // Chat tab switching
@@ -519,6 +532,10 @@ let destX = -1, destY = -1;
 let targetGlow = null;
 let myStats = { hp: 10, maxHp: 10, skills: {}, inv: [] };
 let myGender = 'male';
+let tutorialHint = null;
+let npcDialogueLines = [];
+let npcDialogueTimer = null;
+let npcDialogueName = '';
 let customNameMap = {};
 let groundItemList = [];
 let openDoorList = [];
@@ -731,6 +748,7 @@ function handleServerMsg(msg) {
       myStats.skills = msg.skills; myStats.inv = msg.inv;
       if (msg.equip) myEquip = msg.equip;
       if (msg.bonuses) myBonuses = msg.bonuses;
+      tutorialHint = msg.tutorialHint || null;
       updateStatsUI();
       break;
     case 'names':
@@ -738,6 +756,17 @@ function handleServerMsg(msg) {
       break;
     case 'chat':
       showChat(msg.msg, msg.color);
+      // Show NPC dialogue overlay for tutorial NPC messages
+      const dlgMatch = msg.msg && msg.msg.match(/^\[([^\]]+)\] (.+)$/);
+      if (dlgMatch && msg.color === '#0ff') {
+        if (npcDialogueName !== dlgMatch[1]) {
+          npcDialogueLines = [];
+          npcDialogueName = dlgMatch[1];
+        }
+        npcDialogueLines.push(dlgMatch[2]);
+        clearTimeout(npcDialogueTimer);
+        npcDialogueTimer = setTimeout(() => { npcDialogueLines = []; npcDialogueName = ''; }, 8000);
+      }
       break;
   }
 }
@@ -752,25 +781,36 @@ function spawnHitsplat(wx, wy, text, bg, onMe) {
 }
 
 // ── UI ─────────────────────────────────────────────────────────────────────────
+// Right-click chat log to copy all messages to clipboard
+logEl.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  const lines = [...logEl.querySelectorAll('.msg')].map(m => m.textContent);
+  navigator.clipboard.writeText(lines.join('\n')).then(() => {
+    showChat('[Chat copied to clipboard]', '#333');
+  });
+});
+
 function showChat(msg, color = '#000') {
   const div = document.createElement('div');
   div.className = 'msg'; div.style.color = color; div.textContent = msg;
   logEl.appendChild(div);
   logEl.scrollTop = logEl.scrollHeight;
   if (logEl.children.length > 50) logEl.removeChild(logEl.firstChild);
-  const youHit = msg.match(/^You hit (.+) for (\d+)$/);
+  const youHit = msg.match(/You hit (\w[\w ]*) for (\d+)/);
   if (youHit) {
     const npc = combatTargetId !== null ? npcList.find(n => n.id === combatTargetId) : npcList.find(n => n.name === youHit[1]);
-    if (npc) spawnHitsplat(npc.x, npc.y, youHit[2], '#ff2020', false);
-    else spawnHitsplat(myX, myY, youHit[2], '#ff2020', false);
+    if (npc) spawnHitsplat(npc.x, npc.y, youHit[2], youHit[2] === '0' ? '#2244cc' : '#ff2020', false);
+    else spawnHitsplat(myX, myY, youHit[2], youHit[2] === '0' ? '#2244cc' : '#ff2020', false);
   }
-  const youMiss = msg.match(/^You miss (.+)$/);
+  const youMiss = msg.match(/You miss (\w[\w ]*)/);
   if (youMiss) {
     const npc = combatTargetId !== null ? npcList.find(n => n.id === combatTargetId) : npcList.find(n => n.name === youMiss[1]);
     if (npc) spawnHitsplat(npc.x, npc.y, '0', '#2244cc', false);
   }
-  const npcHit = msg.match(/hits you for (\d+)$/);
-  if (npcHit) spawnHitsplat(myX, myY, npcHit[1], '#991010', true);
+  const npcHit = msg.match(/hits you for (\d+)/);
+  if (npcHit) spawnHitsplat(myX, myY, npcHit[1], npcHit[1] === '0' ? '#2244cc' : '#991010', true);
+  const npcMiss = msg.match(/ misses \(/);
+  if (npcMiss) spawnHitsplat(myX, myY, '0', '#2244cc', true);
   if (msg.match(/^You killed /)) combatTargetId = null;
 }
 
@@ -1073,7 +1113,9 @@ canvas.addEventListener('contextmenu', (e) => {
   }
   for (const npc of npcList) {
     if (npc.x === tx && npc.y === ty) {
-      showChat(`Examine: ${npc.name} (Level ${Math.ceil(npc.maxHp / 2)}) - HP: ${npc.hp}/${npc.maxHp}`, '#333'); return;
+      if (npc.talk) showChat(`Talk-to: ${npc.name}`, '#0ff');
+      else showChat(`Examine: ${npc.name} (Level ${Math.ceil(npc.maxHp / 2)}) - HP: ${npc.hp}/${npc.maxHp}`, '#333');
+      return;
     }
   }
   for (const p of otherPlayers) {
@@ -1091,6 +1133,12 @@ canvas.addEventListener('contextmenu', (e) => {
 
 canvas.addEventListener('mousedown', (e) => {
   if (e.button !== 0 || !connected) return;
+  // Dismiss NPC dialogue on click
+  if (npcDialogueLines.length > 0) {
+    npcDialogueLines = []; npcDialogueName = '';
+    clearTimeout(npcDialogueTimer);
+    return;
+  }
   const { tx, ty } = getTileAt(e);
   if (paintTool === 'picker') {
     if (window.EyeDropper) {
@@ -1132,7 +1180,15 @@ canvas.addEventListener('mousedown', (e) => {
     if (gi.x === tx && gi.y === ty) { targetGlow = { x: tx, y: ty, w: 1, h: 1 }; sendMsg({ t: 'pickup', id: gi.id }); return; }
   }
   for (const npc of npcList) {
-    if (npc.x === tx && npc.y === ty) { targetGlow = { x: tx, y: ty, w: 1, h: 1 }; sendMsg({ t: 'attack', id: npc.id }); combatTargetId = npc.id; return; }
+    if (npc.x === tx && npc.y === ty) {
+      targetGlow = { x: tx, y: ty, w: 1, h: 1 };
+      if (npc.talk) {
+        sendMsg({ t: 'talk', id: npc.id });
+      } else {
+        sendMsg({ t: 'attack', id: npc.id }); combatTargetId = npc.id;
+      }
+      return;
+    }
   }
   if (tile === T.DOOR) { sendMsg({ t: 'door', x: tx, y: ty }); return; }
   if (openDoorList.some(d => (d.ox === tx && d.oy === ty) || (d.sx === tx && d.sy === ty))) { sendMsg({ t: 'door', x: tx, y: ty }); return; }
@@ -1720,6 +1776,17 @@ function render() {
   }
 
   // NPCs
+  // NPC true tile markers (server-side position, not interpolated)
+  for (const npc of npcList) {
+    const [ttx, tty] = toScreen(npc.x, npc.y);
+    if (ttx < -TILE * 2 || tty < -TILE * 2 || ttx > canvas.width + TILE || tty > canvas.height + TILE) continue;
+    ctx.strokeStyle = 'rgba(0, 255, 255, 0.7)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(ttx + 0.5, tty + 0.5, TILE - 1, TILE - 1);
+    ctx.fillStyle = 'rgba(0, 255, 255, 0.08)';
+    ctx.fillRect(ttx + 1, tty + 1, TILE - 2, TILE - 2);
+  }
+
   for (const npc of npcList) {
     const nsm = npcSmooth.get(npc.id);
     const nx = nsm ? nsm.x : npc.x, ny = nsm ? nsm.y : npc.y;
@@ -1782,6 +1849,14 @@ function render() {
     if (sx < -TILE * 2 || sy < -TILE * 2 || sx > canvas.width + TILE || sy > canvas.height + TILE) continue;
     drawPlayer(sx, sy, p.g || 'male', p.hp, p.maxHp, false);
   }
+
+  // Player true tile marker (server-side position)
+  const [ptx, pty] = toScreen(myX, myY);
+  ctx.strokeStyle = 'rgba(0, 255, 0, 0.7)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(ptx + 0.5, pty + 0.5, TILE - 1, TILE - 1);
+  ctx.fillStyle = 'rgba(0, 255, 0, 0.08)';
+  ctx.fillRect(ptx + 1, pty + 1, TILE - 2, TILE - 2);
 
   // Me
   const [mpx, mpy] = toScreen(mySmX, mySmY);
@@ -1858,6 +1933,66 @@ function render() {
     ctx.fillRect(cx, canvas.height - 22, tw, 18);
     ctx.fillStyle = '#ff981f';
     ctx.fillText(coordText, cx + 6, canvas.height - 8);
+  }
+
+  // NPC Dialogue overlay
+  if (npcDialogueLines.length > 0) {
+    const dlgPad = 16;
+    const dlgLineH = 22;
+    const dlgNameH = 28;
+    const dlgW = Math.min(500, canvas.width - 40);
+    const dlgH = dlgNameH + dlgPad + npcDialogueLines.length * dlgLineH + dlgPad;
+    const dlgX = (canvas.width - dlgW) / 2;
+    const dlgY = canvas.height - dlgH - 60;
+
+    // Background
+    ctx.fillStyle = 'rgba(10, 15, 12, 0.92)';
+    ctx.fillRect(dlgX, dlgY, dlgW, dlgH);
+    ctx.strokeStyle = '#d4a853';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(dlgX, dlgY, dlgW, dlgH);
+    ctx.strokeStyle = 'rgba(212, 168, 83, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(dlgX + 3, dlgY + 3, dlgW - 6, dlgH - 6);
+
+    // NPC name
+    ctx.font = 'bold 15px monospace';
+    ctx.fillStyle = '#d4a853';
+    ctx.fillText(npcDialogueName, dlgX + dlgPad, dlgY + 22);
+
+    // Separator line
+    ctx.strokeStyle = 'rgba(212, 168, 83, 0.4)';
+    ctx.beginPath();
+    ctx.moveTo(dlgX + dlgPad, dlgY + dlgNameH);
+    ctx.lineTo(dlgX + dlgW - dlgPad, dlgY + dlgNameH);
+    ctx.stroke();
+
+    // Dialogue text
+    ctx.font = '14px monospace';
+    ctx.fillStyle = '#e8f0ec';
+    for (let i = 0; i < npcDialogueLines.length; i++) {
+      ctx.fillText(npcDialogueLines[i], dlgX + dlgPad, dlgY + dlgNameH + dlgPad + i * dlgLineH + 14);
+    }
+
+    // Click to dismiss hint
+    ctx.font = '11px monospace';
+    ctx.fillStyle = 'rgba(212, 168, 83, 0.5)';
+    ctx.fillText('click to dismiss', dlgX + dlgW - 110, dlgY + dlgH - 6);
+  }
+
+  // Tutorial Island hint bar
+  if (tutorialHint) {
+    ctx.font = 'bold 14px monospace';
+    const hintText = '\u25B6 ' + tutorialHint;
+    const hw = ctx.measureText(hintText).width + 20;
+    const hx = (canvas.width - hw) / 2;
+    ctx.fillStyle = 'rgba(0,40,80,0.85)';
+    ctx.fillRect(hx, 4, hw, 24);
+    ctx.strokeStyle = '#0ff';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(hx, 4, hw, 24);
+    ctx.fillStyle = '#0ff';
+    ctx.fillText(hintText, hx + 10, 21);
   }
 
   updateCombatUI();

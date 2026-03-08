@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiniScape Launcher</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-deep: #0a0d14;
+  --bg-panel: #111827;
+  --bg-card: #1a2236;
+  --bg-card-hover: #212d47;
+  --border-dim: #1e293b;
+  --border-glow: #d4a853;
+  --gold: #d4a853;
+  --gold-bright: #f5d98a;
+  --gold-dim: #8b7332;
+  --text-primary: #e8dcc8;
+  --text-muted: #8899aa;
+  --text-dim: #556677;
+  --green-play: #22c55e;
+  --green-glow: #16a34a;
+  --red: #ef4444;
+  --cyan: #06b6d4;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: 'Crimson Text', Georgia, serif;
+  overflow: hidden;
+}
+
+/* ── Animated background ─────────────────────── */
+.bg-layer {
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(212,168,83,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 80% 90%, rgba(6,182,212,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 100% 100% at 50% 50%, rgba(10,13,20,1) 40%, rgba(26,34,54,0.8) 100%);
+}
+.bg-layer::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  background-size: 200px;
+  opacity: 0.5;
+}
+
+/* ── Particles ───────────────────────────────── */
+.particles {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+}
+.particle {
+  position: absolute;
+  width: 2px; height: 2px;
+  background: var(--gold);
+  border-radius: 50%;
+  opacity: 0;
+  animation: float-up 8s infinite;
+}
+@keyframes float-up {
+  0% { opacity: 0; transform: translateY(0) scale(1); }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.1; }
+  100% { opacity: 0; transform: translateY(-100vh) scale(0.3); }
+}
+
+/* ── Layout ──────────────────────────────────── */
+.launcher {
+  position: relative; z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  grid-template-rows: 56px 1fr;
+  height: 100vh;
+  gap: 0;
+}
+
+/* ── Top Bar ─────────────────────────────────── */
+.topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  background: rgba(10,13,20,0.95);
+  border-bottom: 1px solid var(--border-dim);
+  backdrop-filter: blur(20px);
+  -webkit-app-region: drag;
+}
+.topbar-logo {
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-dim));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-right: 32px;
+}
+.topbar-nav {
+  display: flex; gap: 4px;
+}
+.topbar-nav a {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  position: relative;
+}
+.topbar-nav a:hover { color: var(--text-primary); background: rgba(212,168,83,0.08); }
+.topbar-nav a.active {
+  color: var(--gold);
+  background: rgba(212,168,83,0.12);
+}
+.topbar-nav a.active::after {
+  content: '';
+  position: absolute; bottom: -1px; left: 16px; right: 16px; height: 2px;
+  background: var(--gold);
+  border-radius: 1px;
+}
+.topbar-right {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 16px;
+}
+.topbar-settings {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+.topbar-settings:hover { color: var(--text-primary); }
+.topbar-user {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--gold);
+  padding: 6px 12px;
+  border: 1px solid var(--gold-dim);
+  border-radius: 4px;
+  background: rgba(212,168,83,0.06);
+}
+
+/* ── Main Content ────────────────────────────── */
+.main {
+  padding: 32px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold-dim) transparent;
+}
+.main::-webkit-scrollbar { width: 6px; }
+.main::-webkit-scrollbar-track { background: transparent; }
+.main::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 3px; }
+
+/* ── Hero Banner ─────────────────────────────── */
+.hero {
+  position: relative;
+  height: 260px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 36px;
+  cursor: pointer;
+  border: 1px solid var(--border-dim);
+}
+.hero-bg {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(135deg, #1a2744 0%, #0f1929 40%, #1a1a2e 70%, #16213e 100%);
+}
+.hero-bg::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(212,168,83,0.15) 0%, transparent 50%),
+    radial-gradient(circle at 70% 60%, rgba(6,182,212,0.1) 0%, transparent 40%);
+}
+.hero-bg::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(10,13,20,0.9) 0%, transparent 50%);
+}
+.hero-content {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 28px;
+  z-index: 1;
+}
+.hero-badge {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bg-deep);
+  background: var(--gold);
+  padding: 3px 10px;
+  border-radius: 3px;
+  margin-bottom: 10px;
+}
+.hero-title {
+  font-family: 'Cinzel', serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+  margin-bottom: 6px;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+}
+.hero-sub {
+  font-size: 15px;
+  color: var(--text-muted);
+}
+/* Decorative sword/shield shapes in hero */
+.hero-decor {
+  position: absolute;
+  top: 50%; right: 60px;
+  transform: translateY(-50%);
+  z-index: 1;
+  opacity: 0.12;
+}
+.hero-decor svg { width: 180px; height: 180px; }
+
+/* ── Section Headers ─────────────────────────── */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.section-title {
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.section-link {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--cyan);
+  text-decoration: none;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+.section-link:hover { color: var(--gold-bright); }
+
+/* ── News Cards ──────────────────────────────── */
+.news-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.news-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.news-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--gold-dim);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(212,168,83,0.1);
+}
+.news-thumb {
+  height: 120px;
+  position: relative;
+  overflow: hidden;
+}
+.news-thumb-inner {
+  width: 100%; height: 100%;
+  transition: transform 0.4s;
+}
+.news-card:hover .news-thumb-inner { transform: scale(1.05); }
+.news-body {
+  padding: 14px 16px;
+}
+.news-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 6px;
+}
+.news-card-title {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+}
+.news-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+/* ── Sidebar ─────────────────────────────────── */
+.sidebar {
+  background: rgba(17,24,39,0.95);
+  border-left: 1px solid var(--border-dim);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  backdrop-filter: blur(10px);
+}
+
+/* ── Game Logo ───────────────────────────────── */
+.game-logo-box {
+  text-align: center;
+  padding: 16px 0 8px;
+}
+.game-logo-text {
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: 36px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #f5d98a 0%, #d4a853 40%, #8b7332 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 4px rgba(212,168,83,0.3));
+  line-height: 1;
+}
+.game-logo-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+/* ── Play Button ─────────────────────────────── */
+.play-btn {
+  position: relative;
+  width: 100%;
+  padding: 16px;
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(135deg, var(--green-play), var(--green-glow));
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  overflow: hidden;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+.play-btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.play-btn:hover::before { opacity: 1; }
+.play-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(34,197,94,0.4), 0 0 40px rgba(34,197,94,0.15);
+}
+.play-btn:active { transform: translateY(0); }
+
+/* Pulse ring animation on play button */
+.play-btn::after {
+  content: '';
+  position: absolute; inset: -3px;
+  border: 2px solid var(--green-play);
+  border-radius: 10px;
+  opacity: 0;
+  animation: pulse-ring 2.5s ease-out infinite;
+}
+@keyframes pulse-ring {
+  0% { opacity: 0.6; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+
+/* ── Sidebar Fields ──────────────────────────── */
+.field-label {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.field-select {
+  width: 100%;
+  padding: 10px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238899aa' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+.field-select:hover { border-color: var(--gold-dim); }
+.field-select:focus { outline: none; border-color: var(--gold); }
+
+.field-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--cyan);
+  text-decoration: none;
+  margin-top: 8px;
+  transition: color 0.2s;
+}
+.field-link:hover { color: var(--gold-bright); }
+.field-link svg { width: 14px; height: 14px; }
+
+/* ── Server Status ───────────────────────────── */
+.server-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green-play);
+  box-shadow: 0 0 8px rgba(34,197,94,0.5);
+  animation: status-pulse 2s ease-in-out infinite;
+}
+.status-dot.offline { background: var(--red); box-shadow: 0 0 8px rgba(239,68,68,0.5); animation: none; }
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ── Version Info ────────────────────────────── */
+.version-box {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-dim);
+}
+.version-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.version-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.version-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.version-val.latest { color: var(--green-play); }
+
+/* ── Sidebar Links ───────────────────────────── */
+.sidebar-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sidebar-link {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cyan);
+  text-decoration: none;
+  letter-spacing: 0.5px;
+  transition: color 0.2s;
+}
+.sidebar-link:hover { color: var(--gold-bright); }
+
+/* ── Loading overlay ─────────────────────────── */
+.loading-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: var(--bg-deep);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 20px;
+  opacity: 1;
+  transition: opacity 0.6s ease-out;
+  pointer-events: all;
+}
+.loading-overlay.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+.loading-logo {
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: 48px;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #f5d98a 0%, #d4a853 40%, #8b7332 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: logo-breathe 2s ease-in-out infinite;
+}
+@keyframes logo-breathe {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(212,168,83,0.3)); }
+  50% { filter: drop-shadow(0 0 20px rgba(212,168,83,0.6)); }
+}
+.loading-bar-track {
+  width: 240px; height: 3px;
+  background: var(--border-dim);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.loading-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold-bright));
+  border-radius: 2px;
+  animation: load-fill 1.5s ease-out forwards;
+}
+@keyframes load-fill {
+  0% { width: 0; }
+  60% { width: 75%; }
+  100% { width: 100%; }
+}
+.loading-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+/* ── Animations ──────────────────────────────── */
+.fade-in { opacity: 0; animation: fade-in 0.5s ease-out forwards; }
+.fade-in-1 { animation-delay: 0.1s; }
+.fade-in-2 { animation-delay: 0.2s; }
+.fade-in-3 { animation-delay: 0.3s; }
+.fade-in-4 { animation-delay: 0.4s; }
+.fade-in-5 { animation-delay: 0.5s; }
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive ──────────────────────────────── */
+@media (max-width: 900px) {
+  .launcher { grid-template-columns: 1fr; }
+  .sidebar { border-left: none; border-top: 1px solid var(--border-dim); }
+  .news-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .news-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div class="loading-overlay" id="loading">
+  <div class="loading-logo">MiniScape</div>
+  <div class="loading-bar-track"><div class="loading-bar-fill"></div></div>
+  <div class="loading-text">Connecting to server...</div>
+</div>
+
+<!-- Background -->
+<div class="bg-layer"></div>
+<div class="particles" id="particles"></div>
+
+<!-- Launcher -->
+<div class="launcher">
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-logo">MiniScape</div>
+    <nav class="topbar-nav">
+      <a href="#" class="active">Home</a>
+      <a href="/play">Game</a>
+      <a href="/map">World Map</a>
+    </nav>
+    <div class="topbar-right">
+      <div class="topbar-settings">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        Settings
+      </div>
+      <div class="topbar-user" id="user-tag">Guest</div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+
+    <!-- Hero Banner -->
+    <div class="hero fade-in fade-in-1" onclick="window.location='/play'">
+      <div class="hero-bg"></div>
+      <div class="hero-decor">
+        <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="0.5">
+          <path d="M50 5 L50 95 M35 15 L65 15 M30 20 L70 20 M45 90 L55 90 L58 95 L42 95 Z" stroke="#d4a853"/>
+          <circle cx="50" cy="35" r="18" stroke="#d4a853"/>
+          <path d="M50 17 L50 53 M32 35 L68 35" stroke="#d4a853"/>
+        </svg>
+      </div>
+      <div class="hero-content">
+        <div class="hero-badge">Now Live</div>
+        <div class="hero-title">Tutorial Island Is Here</div>
+        <div class="hero-sub">Experience the authentic OSRS Tutorial Island, rebuilt from real game data.</div>
+      </div>
+    </div>
+
+    <!-- Recent Updates -->
+    <div class="section-header fade-in fade-in-2">
+      <div class="section-title">Recent Updates</div>
+      <a href="https://1-future.github.io/miniscape/" class="section-link" target="_blank">View All</a>
+    </div>
+    <div class="news-grid">
+      <a href="https://1-future.github.io/miniscape/posts/tutorial-island.html" target="_blank" class="news-card fade-in fade-in-3">
+        <div class="news-thumb">
+          <div class="news-thumb-inner" style="background: linear-gradient(135deg, #1a3a2a, #0f2920); display:flex; align-items:center; justify-content:center;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+        </div>
+        <div class="news-body">
+          <div class="news-tag">Feature</div>
+          <div class="news-card-title">Tutorial Island Launch</div>
+          <div class="news-date">7 March 2026</div>
+        </div>
+      </a>
+      <a href="https://1-future.github.io/miniscape/posts/combat-system.html" target="_blank" class="news-card fade-in fade-in-4">
+        <div class="news-thumb">
+          <div class="news-thumb-inner" style="background: linear-gradient(135deg, #2a1a1a, #291010); display:flex; align-items:center; justify-content:center;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.5"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          </div>
+        </div>
+        <div class="news-body">
+          <div class="news-tag">Combat</div>
+          <div class="news-card-title">OSRS Combat Styles & Projectile Delays</div>
+          <div class="news-date">7 March 2026</div>
+        </div>
+      </a>
+      <a href="https://1-future.github.io/miniscape/posts/osrs-sync.html" target="_blank" class="news-card fade-in fade-in-5">
+        <div class="news-thumb">
+          <div class="news-thumb-inner" style="background: linear-gradient(135deg, #1a1a3a, #101029); display:flex; align-items:center; justify-content:center;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          </div>
+        </div>
+        <div class="news-body">
+          <div class="news-tag">Engine</div>
+          <div class="news-card-title">OSRS Sync — Real-Time Data Mirroring</div>
+          <div class="news-date">7 March 2026</div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Devlog -->
+    <div class="section-header fade-in fade-in-5">
+      <div class="section-title">Devlog</div>
+    </div>
+    <div class="news-grid">
+      <a href="https://1-future.github.io/miniscape/posts/tick-queue.html" target="_blank" class="news-card fade-in fade-in-5">
+        <div class="news-thumb">
+          <div class="news-thumb-inner" style="background: linear-gradient(135deg, #2a2a1a, #292010); display:flex; align-items:center; justify-content:center;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d4a853" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </div>
+        </div>
+        <div class="news-body">
+          <div class="news-tag">Architecture</div>
+          <div class="news-card-title">Tick Queue System — OSRS-Authentic Scheduling</div>
+          <div class="news-date">6 March 2026</div>
+        </div>
+      </a>
+      <a href="https://1-future.github.io/miniscape/posts/lumbridge-terrain.html" target="_blank" class="news-card fade-in fade-in-5">
+        <div class="news-thumb">
+          <div class="news-thumb-inner" style="background: linear-gradient(135deg, #1a2a3a, #0f2030); display:flex; align-items:center; justify-content:center;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#8899aa" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+        </div>
+        <div class="news-body">
+          <div class="news-tag">World</div>
+          <div class="news-card-title">Lumbridge & Terrain Rendering from OSRS Cache</div>
+          <div class="news-date">5 March 2026</div>
+        </div>
+      </a>
+      <a href="https://1-future.github.io/miniscape/posts/combat-debug-plugin.html" target="_blank" class="news-card fade-in fade-in-5">
+        <div class="news-thumb">
+          <div class="news-thumb-inner" style="background: linear-gradient(135deg, #2a1a2a, #201020); display:flex; align-items:center; justify-content:center;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+        </div>
+        <div class="news-body">
+          <div class="news-tag">RuneLite</div>
+          <div class="news-card-title">Combat Debug Plugin — Capturing Real OSRS Data</div>
+          <div class="news-date">5 March 2026</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="game-logo-box fade-in fade-in-1">
+      <div class="game-logo-text">Mini<br>Scape</div>
+      <div class="game-logo-sub">Open Source MMORPG</div>
+    </div>
+
+    <button class="play-btn fade-in fade-in-2" onclick="window.location='/play'" id="play-btn">
+      Play
+    </button>
+
+    <div class="fade-in fade-in-3">
+      <div class="field-label">Game Version</div>
+      <select class="field-select" id="version-select">
+        <option>v0.1.0 — Tutorial Island</option>
+      </select>
+    </div>
+
+    <div class="fade-in fade-in-3">
+      <div class="field-label">Character</div>
+      <select class="field-select">
+        <option>New Character</option>
+      </select>
+      <a href="#" class="field-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Character settings
+      </a>
+    </div>
+
+    <div class="fade-in fade-in-4">
+      <div class="field-label">Server Status</div>
+      <div class="server-status">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">Checking...</span>
+      </div>
+    </div>
+
+    <div class="version-box fade-in fade-in-5">
+      <div class="version-row">
+        <span class="version-label">Client</span>
+        <span class="version-val latest">v0.1.0</span>
+      </div>
+      <div class="version-row">
+        <span class="version-label">Server</span>
+        <span class="version-val" id="server-ver">—</span>
+      </div>
+      <div class="version-row">
+        <span class="version-label">Data</span>
+        <span class="version-val">OSRS Cache r226</span>
+      </div>
+    </div>
+
+    <div class="sidebar-links fade-in fade-in-5">
+      <a href="https://github.com" class="sidebar-link">GitHub Repository</a>
+      <a href="#" class="sidebar-link">Wiki & Docs</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Particles
+const pc = document.getElementById('particles');
+for (let i = 0; i < 30; i++) {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  p.style.left = Math.random() * 100 + '%';
+  p.style.bottom = '-10px';
+  p.style.animationDelay = Math.random() * 8 + 's';
+  p.style.animationDuration = (6 + Math.random() * 6) + 's';
+  p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
+  pc.appendChild(p);
+}
+
+// Loading screen
+setTimeout(() => document.getElementById('loading').classList.add('hide'), 1800);
+
+// Server status check
+async function checkServer() {
+  const dot = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  const ver = document.getElementById('server-ver');
+  try {
+    const ws = new WebSocket('ws://' + location.host);
+    ws.onopen = () => {
+      dot.classList.remove('offline');
+      text.textContent = 'Online — localhost:2222';
+      text.style.color = '#22c55e';
+      ver.textContent = 'v0.1.0';
+      ver.classList.add('latest');
+      ws.close();
+    };
+    ws.onerror = () => {
+      dot.classList.add('offline');
+      text.textContent = 'Offline';
+      text.style.color = '#ef4444';
+    };
+  } catch(e) {
+    dot.classList.add('offline');
+    text.textContent = 'Offline';
+    text.style.color = '#ef4444';
+  }
+}
+checkServer();
+setInterval(checkServer, 15000);
+</script>
+</body>
+</html>

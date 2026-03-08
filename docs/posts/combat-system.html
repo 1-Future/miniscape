@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSRS Combat Styles & Projectile Delays — MiniScape Devlog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0a0e0d; --bg-card: #111916; --border: #1e2e24; --border-accent: #2a4a32;
+  --gold: #d4a853; --green: #22c55e; --red: #ef4444; --cyan: #06b6d4; --purple: #c084fc;
+  --text: #c8d0cc; --text-dim: #6b7e72; --text-bright: #e8f0ec;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Crimson Text', Georgia, serif; font-size: 19px; line-height: 1.8; min-height: 100vh; }
+body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 999; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); }
+
+.site-header { border-bottom: 1px solid var(--border); padding: 24px 0; position: sticky; top: 0; background: rgba(10, 14, 13, 0.92); backdrop-filter: blur(12px); z-index: 100; }
+.header-inner { max-width: 720px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; }
+.site-logo { font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; color: var(--gold); text-decoration: none; letter-spacing: 2px; text-transform: uppercase; }
+.site-logo span { color: var(--text-dim); font-weight: 400; font-size: 14px; margin-left: 12px; letter-spacing: 3px; }
+.back-link { color: var(--text-dim); text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 1px; transition: color 0.2s; }
+.back-link:hover { color: var(--gold); }
+
+article { max-width: 720px; margin: 0 auto; padding: 64px 32px 80px; }
+.post-tag { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; padding: 3px 10px; border-radius: 3px; margin-bottom: 16px; background: rgba(239, 68, 68, 0.12); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.2); }
+.post-date { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text-dim); margin-bottom: 24px; }
+article h1 { font-family: 'Cinzel', serif; font-size: 40px; font-weight: 700; color: var(--text-bright); line-height: 1.2; margin-bottom: 12px; }
+article h2 { font-family: 'Cinzel', serif; font-size: 24px; font-weight: 600; color: var(--gold); margin: 48px 0 16px; }
+article h3 { font-family: 'Cinzel', serif; font-size: 20px; font-weight: 600; color: var(--text-bright); margin: 32px 0 12px; }
+article p { margin-bottom: 20px; }
+article strong { color: var(--text-bright); }
+article em { color: var(--gold); font-style: italic; }
+article ul, article ol { margin: 0 0 20px 24px; }
+article li { margin-bottom: 6px; }
+article code { font-family: 'JetBrains Mono', monospace; font-size: 15px; background: var(--bg-card); border: 1px solid var(--border); padding: 2px 6px; border-radius: 3px; color: var(--cyan); }
+article pre { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 20px 24px; margin: 0 0 24px; overflow-x: auto; }
+article pre code { background: none; border: none; padding: 0; font-size: 14px; color: var(--text); line-height: 1.6; }
+blockquote { border-left: 3px solid rgba(212, 168, 83, 0.4); padding-left: 20px; margin: 0 0 24px; color: var(--text-dim); font-style: italic; }
+
+.table-wrap { overflow-x: auto; margin: 0 0 24px; }
+table { width: 100%; border-collapse: collapse; font-size: 16px; }
+th { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border-accent); }
+td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+td:first-child { color: var(--text-bright); font-weight: 600; }
+
+.site-footer { border-top: 1px solid var(--border); padding: 32px 0; text-align: center; }
+.site-footer p { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); letter-spacing: 1px; }
+
+@media (max-width: 640px) { article h1 { font-size: 28px; } .header-inner { flex-direction: column; gap: 12px; } }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="../" class="site-logo">MiniScape <span>Devlog</span></a>
+    <a href="../" class="back-link">&larr; All Posts</a>
+  </div>
+</header>
+
+<article>
+  <div class="post-tag">Combat</div>
+  <h1>OSRS Combat Styles & Projectile Delays</h1>
+  <div class="post-date">7 March 2026</div>
+
+  <p>Combat in OSRS is deceptively complex. What looks like "click and wait" is actually a precisely timed system of attack speeds, projectile travel, hitsplat delays, and XP distribution. We captured it all.</p>
+
+  <h2>The Three Combat Styles</h2>
+
+  <h3>Melee</h3>
+  <p>Melee is instant — damage is calculated and applied on the same tick the animation plays. A bronze sword swings at <strong>4-tick speed</strong> (2.4 seconds) with animation ID <code>386</code>.</p>
+
+  <p>XP is distributed at <code>4 XP per damage</code> to the selected style (Attack, Strength, or Defence) plus <code>1.33 XP per damage</code> to Hitpoints.</p>
+
+  <h3>Ranged</h3>
+  <p>Ranged introduces <em>projectile travel time</em>. The arrow fires on tick 0 (animation <code>426</code>), but the hitsplat doesn't appear until the projectile arrives. Travel time depends on distance:</p>
+
+  <div class="table-wrap">
+  <table>
+    <tr><th>Distance</th><th>Travel Ticks</th><th>Total Delay</th></tr>
+    <tr><td>1–3 tiles</td><td>1</td><td>0.6s</td></tr>
+    <tr><td>4–6 tiles</td><td>2</td><td>1.2s</td></tr>
+    <tr><td>7–10 tiles</td><td>3</td><td>1.8s</td></tr>
+  </table>
+  </div>
+
+  <p>Shortbow attack speed is <strong>4 ticks</strong>. XP: <code>4 Ranged XP per damage</code> + Hitpoints.</p>
+
+  <h3>Magic</h3>
+  <p>Magic works like ranged with projectile delay, but adds a spell lookup layer. Wind Strike (anim <code>711</code>) has a max hit of 2 and grants <code>5.5 base XP</code> plus <code>2 XP per damage</code> to Magic, plus Hitpoints XP.</p>
+
+  <h2>Attack Speed</h2>
+
+  <p>Every weapon has an attack speed measured in game ticks (0.6s each):</p>
+
+  <div class="table-wrap">
+  <table>
+    <tr><th>Weapon</th><th>Speed</th><th>Seconds</th></tr>
+    <tr><td>Bronze dagger</td><td>4 ticks</td><td>2.4s</td></tr>
+    <tr><td>Bronze sword</td><td>4 ticks</td><td>2.4s</td></tr>
+    <tr><td>Shortbow</td><td>4 ticks</td><td>2.4s</td></tr>
+    <tr><td>Staff (spells)</td><td>5 ticks</td><td>3.0s</td></tr>
+  </table>
+  </div>
+
+  <h2>Damage Calculation</h2>
+
+  <p>OSRS uses a two-roll system: first an <em>accuracy roll</em> to determine if the attack hits, then a <em>damage roll</em> from 0 to max hit. Both rolls are uniform random. We replicate this exactly — no simplifications, no approximations.</p>
+
+  <pre><code>// Accuracy: attack roll vs defence roll
+const attackRoll = Math.floor(Math.random() * (effectiveLevel * (equipBonus + 64)));
+const defenceRoll = Math.floor(Math.random() * (defLevel * (defBonus + 64)));
+const hit = attackRoll > defenceRoll;
+
+// Damage: uniform 0 to maxHit (inclusive)
+const damage = hit ? Math.floor(Math.random() * (maxHit + 1)) : 0;</code></pre>
+
+  <blockquote>When the Combat Debug Plugin logs "hit 1" on a giant rat, MiniScape's combat system produces statistically identical results. Same formulas, same distributions.</blockquote>
+</article>
+
+<footer class="site-footer">
+  <p>MiniScape &mdash; 1-Future &mdash; 2026</p>
+</footer>
+
+</body>
+</html>

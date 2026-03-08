@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tick Queue System — MiniScape Devlog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0a0e0d; --bg-card: #111916; --border: #1e2e24; --border-accent: #2a4a32;
+  --gold: #d4a853; --green: #22c55e; --red: #ef4444; --cyan: #06b6d4; --purple: #c084fc;
+  --text: #c8d0cc; --text-dim: #6b7e72; --text-bright: #e8f0ec;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Crimson Text', Georgia, serif; font-size: 19px; line-height: 1.8; min-height: 100vh; }
+body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 999; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); }
+
+.site-header { border-bottom: 1px solid var(--border); padding: 24px 0; position: sticky; top: 0; background: rgba(10, 14, 13, 0.92); backdrop-filter: blur(12px); z-index: 100; }
+.header-inner { max-width: 720px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; }
+.site-logo { font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; color: var(--gold); text-decoration: none; letter-spacing: 2px; text-transform: uppercase; }
+.site-logo span { color: var(--text-dim); font-weight: 400; font-size: 14px; margin-left: 12px; letter-spacing: 3px; }
+.back-link { color: var(--text-dim); text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 1px; transition: color 0.2s; }
+.back-link:hover { color: var(--gold); }
+
+article { max-width: 720px; margin: 0 auto; padding: 64px 32px 80px; }
+.post-tag { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; padding: 3px 10px; border-radius: 3px; margin-bottom: 16px; background: rgba(212, 168, 83, 0.12); color: var(--gold); border: 1px solid rgba(212, 168, 83, 0.2); }
+.post-date { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text-dim); margin-bottom: 24px; }
+article h1 { font-family: 'Cinzel', serif; font-size: 40px; font-weight: 700; color: var(--text-bright); line-height: 1.2; margin-bottom: 12px; }
+article h2 { font-family: 'Cinzel', serif; font-size: 24px; font-weight: 600; color: var(--gold); margin: 48px 0 16px; }
+article p { margin-bottom: 20px; }
+article strong { color: var(--text-bright); }
+article em { color: var(--gold); font-style: italic; }
+article ul, article ol { margin: 0 0 20px 24px; }
+article li { margin-bottom: 6px; }
+article code { font-family: 'JetBrains Mono', monospace; font-size: 15px; background: var(--bg-card); border: 1px solid var(--border); padding: 2px 6px; border-radius: 3px; color: var(--cyan); }
+article pre { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 20px 24px; margin: 0 0 24px; overflow-x: auto; }
+article pre code { background: none; border: none; padding: 0; font-size: 14px; color: var(--text); line-height: 1.6; }
+blockquote { border-left: 3px solid rgba(212, 168, 83, 0.4); padding-left: 20px; margin: 0 0 24px; color: var(--text-dim); font-style: italic; }
+
+.site-footer { border-top: 1px solid var(--border); padding: 32px 0; text-align: center; }
+.site-footer p { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); letter-spacing: 1px; }
+
+@media (max-width: 640px) { article h1 { font-size: 28px; } .header-inner { flex-direction: column; gap: 12px; } }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="../" class="site-logo">MiniScape <span>Devlog</span></a>
+    <a href="../" class="back-link">&larr; All Posts</a>
+  </div>
+</header>
+
+<article>
+  <div class="post-tag">Architecture</div>
+  <h1>Tick Queue System — OSRS-Authentic Scheduling</h1>
+  <div class="post-date">6 March 2026</div>
+
+  <p>OSRS doesn't run in real-time. It runs in <em>ticks</em> — discrete 600ms intervals where every game action is processed. This is the heartbeat of the game, and getting it right is non-negotiable for authenticity.</p>
+
+  <h2>600ms — The Sacred Interval</h2>
+
+  <p>Every 0.6 seconds, the OSRS server processes one game tick. During that tick, in a specific order:</p>
+
+  <ol>
+    <li>Player movement is processed</li>
+    <li>Player actions are executed (combat, skilling, etc.)</li>
+    <li>NPC actions are processed</li>
+    <li>Projectiles advance</li>
+    <li>Delayed effects resolve (hitsplats, XP drops)</li>
+    <li>State is broadcast to clients</li>
+  </ol>
+
+  <p>MiniScape replicates this with a <code>setInterval</code> running at exactly 600ms. Every scheduled action goes through the tick queue.</p>
+
+  <h2>The Queue</h2>
+
+  <p>Actions in OSRS don't happen "now" — they happen "on tick N." When you click to attack an NPC, the game schedules your first attack for the next available tick based on your weapon speed. When that attack hits, the hitsplat might be delayed further if it's a ranged or magic attack.</p>
+
+  <pre><code>// Schedule a delayed action
+function scheduleTick(player, ticksFromNow, callback) {
+  const targetTick = currentTick + ticksFromNow;
+  tickQueue.push({ player, tick: targetTick, fn: callback });
+}
+
+// Every 600ms
+setInterval(() => {
+  currentTick++;
+
+  // Process movement
+  players.forEach(processMovement);
+
+  // Process tick queue
+  tickQueue
+    .filter(t => t.tick === currentTick)
+    .forEach(t => t.fn());
+
+  // Broadcast state
+  broadcastGameState();
+}, 600);</code></pre>
+
+  <h2>Why Ticks Matter</h2>
+
+  <p>If you've ever played OSRS, you've experienced tick manipulation — prayer flicking, 1-tick cooking, 3-tick fishing. These techniques exploit the tick system's deterministic timing. If MiniScape's tick system doesn't match OSRS exactly, none of these techniques would work.</p>
+
+  <p>Some examples of tick-dependent mechanics:</p>
+
+  <ul>
+    <li><strong>Attack speed</strong> — A bronze sword attacks every 4 ticks (2.4s). Not 2.3s, not 2.5s.</li>
+    <li><strong>Eating delay</strong> — Eating food delays your next attack by 3 ticks.</li>
+    <li><strong>Run energy</strong> — Regenerates 1% per tick while standing still at level 1 Agility.</li>
+    <li><strong>Respawn timers</strong> — NPCs respawn on a fixed tick count after death.</li>
+    <li><strong>Projectile travel</strong> — Arrows travel at a fixed rate per tick based on distance.</li>
+  </ul>
+
+  <blockquote>The tick is the atom of OSRS. Everything is built on it, and everything must respect it.</blockquote>
+</article>
+
+<footer class="site-footer">
+  <p>MiniScape &mdash; 1-Future &mdash; 2026</p>
+</footer>
+
+</body>
+</html>
