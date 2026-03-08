@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI Overhaul — MiniScape Devlog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0a0e0d; --bg-card: #111916; --border: #1e2e24; --border-accent: #2a4a32;
+  --gold: #d4a853; --green: #22c55e; --red: #ef4444; --cyan: #06b6d4; --purple: #c084fc;
+  --text: #c8d0cc; --text-dim: #6b7e72; --text-bright: #e8f0ec;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Crimson Text', Georgia, serif; font-size: 19px; line-height: 1.8; min-height: 100vh; }
+body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 999; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); }
+
+.site-header { border-bottom: 1px solid var(--border); padding: 24px 0; position: sticky; top: 0; background: rgba(10, 14, 13, 0.92); backdrop-filter: blur(12px); z-index: 100; }
+.header-inner { max-width: 720px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; }
+.site-logo { font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; color: var(--gold); text-decoration: none; letter-spacing: 2px; text-transform: uppercase; }
+.site-logo span { color: var(--text-dim); font-weight: 400; font-size: 14px; margin-left: 12px; letter-spacing: 3px; }
+.back-link { color: var(--text-dim); text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 1px; transition: color 0.2s; }
+.back-link:hover { color: var(--gold); }
+
+article { max-width: 720px; margin: 0 auto; padding: 64px 32px 80px; }
+.post-tag { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; padding: 3px 10px; border-radius: 3px; margin-bottom: 16px; background: rgba(6, 182, 212, 0.12); color: var(--cyan); border: 1px solid rgba(6, 182, 212, 0.2); }
+.post-date { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text-dim); margin-bottom: 24px; }
+article h1 { font-family: 'Cinzel', serif; font-size: 40px; font-weight: 700; color: var(--text-bright); line-height: 1.2; margin-bottom: 12px; }
+article h2 { font-family: 'Cinzel', serif; font-size: 24px; font-weight: 600; color: var(--gold); margin: 48px 0 16px; }
+article h3 { font-family: 'Cinzel', serif; font-size: 20px; font-weight: 600; color: var(--text-bright); margin: 32px 0 12px; }
+article p { margin-bottom: 20px; }
+article strong { color: var(--text-bright); }
+article em { color: var(--gold); font-style: italic; }
+article ul, article ol { margin: 0 0 20px 24px; }
+article li { margin-bottom: 6px; }
+article code { font-family: 'JetBrains Mono', monospace; font-size: 15px; background: var(--bg-card); border: 1px solid var(--border); padding: 2px 6px; border-radius: 3px; color: var(--cyan); }
+article pre { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 20px 24px; margin: 0 0 24px; overflow-x: auto; }
+article pre code { background: none; border: none; padding: 0; font-size: 14px; color: var(--text); line-height: 1.6; }
+.highlight { color: var(--green); }
+blockquote { border-left: 3px solid var(--gold-dim); padding-left: 20px; margin: 0 0 24px; color: var(--text-dim); font-style: italic; }
+
+.table-wrap { overflow-x: auto; margin: 0 0 24px; }
+table { width: 100%; border-collapse: collapse; font-size: 16px; }
+th { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border-accent); }
+td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+td:first-child { color: var(--text-bright); font-weight: 600; }
+
+.site-footer { border-top: 1px solid var(--border); padding: 32px 0; text-align: center; }
+.site-footer p { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); letter-spacing: 1px; }
+
+@media (max-width: 640px) { article h1 { font-size: 28px; } .header-inner { flex-direction: column; gap: 12px; } }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="../" class="site-logo">MiniScape <span>Devlog</span></a>
+    <a href="../" class="back-link">&larr; All Posts</a>
+  </div>
+</header>
+
+<article>
+  <div class="post-tag">Interface</div>
+  <h1>UI Overhaul — Total Panel Freedom</h1>
+  <div class="post-date">8 March 2026</div>
+
+  <p>OSRS players are particular about their interfaces. RuneLite has <strong>200+ plugins</strong> largely because people want to control every pixel of their screen. MiniScape now delivers that same spirit — every panel is cloneable, colorable, renameable, and snappable to a configurable grid.</p>
+
+  <h2>Panel Cloning</h2>
+
+  <p>Every UI panel now has a <code>+</code> button. Click it, and you get an exact duplicate — fully functional, live-synced with game state. Want <strong>4 minimaps</strong> at different zoom levels? Done. <strong>3 chat windows</strong>? Sure. <strong>5 inventories</strong> around the edges of your screen? Why not.</p>
+
+  <p>Cloned panels are first-class citizens:</p>
+  <ul>
+    <li><strong>Minimap clones</strong> render their own canvas with real-time terrain, player dots, and NPC markers</li>
+    <li><strong>Chat clones</strong> receive all messages in real time</li>
+    <li><strong>Sidebar clones</strong> have independent tab switching — view inventory and skills simultaneously</li>
+    <li><strong>Combat clones</strong> show live HP bars</li>
+    <li><strong>Dialogue clones</strong> mirror text and selections</li>
+  </ul>
+
+  <p>Each clone gets its own taskbar button and can be removed with <code>&times;</code>. There's no limit — clone until your GPU taps out.</p>
+
+  <h2>Panel Customization</h2>
+
+  <p>In UI unlock mode, every panel now exposes:</p>
+  <ul>
+    <li><strong>Text color picker</strong> — change the text color of any panel</li>
+    <li><strong>Background color picker</strong> — full RGBA background control</li>
+    <li><strong>Label toggle</strong> (T) — shows the panel's title bar as a persistent label, visible even outside unlock mode</li>
+    <li><strong>Rename button</strong> (&#x270E;) — give any panel a custom name</li>
+    <li><strong>Label bar color picker</strong> — customize the label bar color independently</li>
+  </ul>
+
+  <p>All customizations persist in <code>localStorage</code> — your layout survives page refreshes and browser restarts.</p>
+
+  <h2>Anchor Grid</h2>
+
+  <p>Instead of freeform chaos, panels now snap to a configurable <em>anchor grid</em>. Cyan lines divide the screen into equal zones with intersection dots marking snap points.</p>
+
+  <ul>
+    <li>Adjustable <strong>X columns</strong> and <strong>Y rows</strong> (range 1–20)</li>
+    <li><strong>14px magnetic threshold</strong> — panels snap when dragged near grid lines</li>
+    <li>Grid density controls (<code>+</code> / <code>-</code>) in the top banner</li>
+    <li>Grid only visible in unlock mode — clean gameplay view</li>
+    <li>Snap works on both position and resize</li>
+  </ul>
+
+  <h2>Square Minimap</h2>
+
+  <p>The minimap previously used a circular clipping mask (like OSRS). We removed it — the minimap now fills its full rectangular panel. When you can clone and resize minimaps to any dimension, a circle clip just wastes pixels.</p>
+
+  <h2>Action Progress Bars</h2>
+
+  <p>Skilling actions now show an RS3-style progress overlay:</p>
+  <ul>
+    <li><strong>Contextual icon</strong> — &#x1FA93; for woodcutting, &#x26CF;&#xFE0F; for mining, &#x1F3A3; for fishing</li>
+    <li><strong>Action name</strong> and <strong>time remaining</strong></li>
+    <li><strong>Smooth progress bar</strong> animated with <code>requestAnimationFrame</code></li>
+    <li>Progress synced to the server's 4-tick (2.4s) gathering cycle</li>
+  </ul>
+
+  <h2>Dialogue Box</h2>
+
+  <p>The dialogue panel got a complete rework:</p>
+  <ul>
+    <li><strong>Always draggable and resizable</strong> — no need to enter unlock mode</li>
+    <li><strong>No auto-timeout</strong> — dialogue stays open until dismissed (critical for NPC dialogue selections)</li>
+    <li><strong>Font size controls</strong> in the title bar — <code>a</code> to shrink, <code>A</code> to grow</li>
+    <li><strong>Text and background color pickers</strong> inline</li>
+  </ul>
+
+  <h2>Grid Toggles</h2>
+
+  <p>The debug grid system now has separate controls:</p>
+
+  <div class="table-wrap">
+  <table>
+    <tr><th>Key</th><th>Toggle</th><th>What It Shows</th></tr>
+    <tr><td><code>G</code></td><td>Tile grid</td><td>White lines on every tile boundary</td></tr>
+    <tr><td><code>Shift+G</code></td><td>Chunk grid</td><td>Blue lines every 8 tiles, red lines every 64 tiles (region boundaries)</td></tr>
+    <tr><td><code>E</code></td><td>Elevation</td><td>Height values overlaid on each tile</td></tr>
+  </table>
+  </div>
+
+  <h2>What's Next</h2>
+
+  <p>The interface system is now flexible enough to support whatever comes next — skill-specific panels, loot trackers, XP counters, boss timers. The clone-and-customize architecture means every new panel type automatically gets all these features for free.</p>
+
+</article>
+
+<footer class="site-footer">
+  <p>MiniScape &mdash; 1-Future &mdash; 2026</p>
+</footer>
+
+</body>
+</html>
