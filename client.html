@@ -23,6 +23,430 @@
   canvas#game3d { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 50; }
 
   /* ── Panel System ─────────────────────────────────────────────────── */
+  /* Default: all corners rounded */
+  .unlockable, .clone-panel, .popout-panel { border-radius: 10px !important; overflow: hidden; }
+  .unlock-handle { border-radius: 10px 10px 0 0 !important; }
+  .hp-bar, .inv-slot, button, #chat-tabs, #action-bar-wrap,
+  #toolbar button, .chat-tab, .taskbar-btn { border-radius: 6px !important; }
+
+  /* Square mode: kill all rounding */
+  body.square-corners *, body.square-corners *::before, body.square-corners *::after {
+    border-radius: 0 !important;
+  }
+
+  /* Chamfer mode: clipped corners */
+  body.chamfer-corners .unlockable,
+  body.chamfer-corners .clone-panel,
+  body.chamfer-corners .popout-panel {
+    border-radius: 0 !important;
+    clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 12px), 0 12px) !important;
+  }
+  body.chamfer-corners .unlock-handle {
+    border-radius: 0 !important;
+  }
+  body.chamfer-corners .hp-bar,
+  body.chamfer-corners .inv-slot,
+  body.chamfer-corners button,
+  body.chamfer-corners .chat-tab,
+  body.chamfer-corners .taskbar-btn,
+  body.chamfer-corners #toolbar button {
+    border-radius: 0 !important;
+    clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px) !important;
+  }
+
+  /* Bevel mode: raised embossed 3D edges */
+  body.edge-bevel .unlockable,
+  body.edge-bevel .clone-panel,
+  body.edge-bevel .popout-panel {
+    border: none !important;
+    box-shadow:
+      inset 2px 2px 0 rgba(255,255,255,0.25),
+      inset -2px -2px 0 rgba(0,0,0,0.5),
+      inset 3px 3px 0 rgba(255,255,255,0.08),
+      inset -3px -3px 0 rgba(0,0,0,0.3),
+      2px 2px 6px rgba(0,0,0,0.4) !important;
+  }
+  body.edge-bevel .inv-slot,
+  body.edge-bevel .taskbar-btn,
+  body.edge-bevel button,
+  body.edge-bevel #toolbar button,
+  body.edge-bevel .chat-tab {
+    box-shadow: inset 1px 1px 0 rgba(255,255,255,0.2), inset -1px -1px 0 rgba(0,0,0,0.4) !important;
+  }
+  body.edge-bevel .tab-icon {
+    box-shadow: inset 1px 1px 0 rgba(255,255,255,0.15), inset -1px -1px 0 rgba(0,0,0,0.35) !important;
+  }
+  body.edge-bevel .tab-icon.active {
+    box-shadow: inset -1px -1px 0 rgba(255,255,255,0.15), inset 1px 1px 0 rgba(0,0,0,0.35) !important;
+  }
+  body.edge-bevel .unlock-handle {
+    box-shadow: inset 1px 1px 0 rgba(255,255,255,0.2), inset -1px -1px 0 rgba(0,0,0,0.3) !important;
+  }
+
+  /* Inset mode: pressed-in / engraved edges */
+  body.edge-inset .unlockable,
+  body.edge-inset .clone-panel,
+  body.edge-inset .popout-panel {
+    border: none !important;
+    box-shadow:
+      inset -2px -2px 0 rgba(255,255,255,0.2),
+      inset 2px 2px 0 rgba(0,0,0,0.5),
+      inset -3px -3px 0 rgba(255,255,255,0.06),
+      inset 3px 3px 0 rgba(0,0,0,0.3),
+      1px 1px 4px rgba(0,0,0,0.3) !important;
+  }
+  body.edge-inset .inv-slot,
+  body.edge-inset .taskbar-btn,
+  body.edge-inset button,
+  body.edge-inset #toolbar button,
+  body.edge-inset .chat-tab {
+    box-shadow: inset -1px -1px 0 rgba(255,255,255,0.15), inset 1px 1px 0 rgba(0,0,0,0.4) !important;
+  }
+  body.edge-inset .tab-icon {
+    box-shadow: inset -1px -1px 0 rgba(255,255,255,0.12), inset 1px 1px 0 rgba(0,0,0,0.35) !important;
+  }
+  body.edge-inset .tab-icon.active {
+    box-shadow: inset 1px 1px 0 rgba(255,255,255,0.12), inset -1px -1px 0 rgba(0,0,0,0.35) !important;
+  }
+  body.edge-inset .unlock-handle {
+    box-shadow: inset -1px -1px 0 rgba(255,255,255,0.15), inset 1px 1px 0 rgba(0,0,0,0.3) !important;
+  }
+
+  /* Ridge mode: raised border line (bevel + inset stacked) */
+  body.edge-ridge .unlockable,
+  body.edge-ridge .clone-panel,
+  body.edge-ridge .popout-panel {
+    border: 3px ridge rgba(180,160,130,0.6) !important;
+    box-shadow: 1px 1px 4px rgba(0,0,0,0.3) !important;
+  }
+  body.edge-ridge .inv-slot,
+  body.edge-ridge .taskbar-btn,
+  body.edge-ridge button,
+  body.edge-ridge #toolbar button,
+  body.edge-ridge .chat-tab {
+    border: 2px ridge rgba(180,160,130,0.5) !important;
+  }
+  body.edge-ridge .tab-icon {
+    border: 2px ridge rgba(180,160,130,0.4) !important;
+  }
+  body.edge-ridge .unlock-handle {
+    border-bottom: 2px ridge rgba(180,160,130,0.5) !important;
+  }
+
+  /* Groove mode: carved channel border */
+  body.edge-groove .unlockable,
+  body.edge-groove .clone-panel,
+  body.edge-groove .popout-panel {
+    border: 3px groove rgba(180,160,130,0.6) !important;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.2) !important;
+  }
+  body.edge-groove .inv-slot,
+  body.edge-groove .taskbar-btn,
+  body.edge-groove button,
+  body.edge-groove #toolbar button,
+  body.edge-groove .chat-tab {
+    border: 2px groove rgba(180,160,130,0.5) !important;
+  }
+  body.edge-groove .tab-icon {
+    border: 2px groove rgba(180,160,130,0.4) !important;
+  }
+  body.edge-groove .unlock-handle {
+    border-bottom: 2px groove rgba(180,160,130,0.5) !important;
+  }
+
+  /* Inner edges mode: visible dividers inside panels */
+  body.inner-edges .unlockable,
+  body.inner-edges .clone-panel {
+    --inner-border: 1px solid rgba(255,255,255,0.08);
+  }
+  body.inner-edges #tab-content,
+  body.inner-edges .clone-tab-content {
+    border-top: 1px solid rgba(255,255,255,0.08) !important;
+  }
+  body.inner-edges .inv-slot {
+    border: 1px solid rgba(255,255,255,0.06) !important;
+  }
+  body.inner-edges #log,
+  body.inner-edges .clone-chat-log {
+    border-top: 1px solid rgba(255,255,255,0.08) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+  }
+  body.inner-edges .tab-icon {
+    border-bottom: 2px solid rgba(255,255,255,0.06) !important;
+  }
+  body.inner-edges .tab-icon.active {
+    border-bottom: 2px solid var(--gold) !important;
+  }
+
+  /* ── Border Weight ──────────────────────────── */
+  body.weight-none .unlockable, body.weight-none .clone-panel, body.weight-none .popout-panel,
+  body.weight-none .inv-slot, body.weight-none .taskbar-btn, body.weight-none .tab-icon,
+  body.weight-none .chat-tab, body.weight-none button, body.weight-none #toolbar button,
+  body.weight-none .unlock-handle { border-width: 0 !important; }
+
+  body.weight-thin .unlockable, body.weight-thin .clone-panel, body.weight-thin .popout-panel { border-width: 1px !important; }
+  body.weight-thin .inv-slot, body.weight-thin .taskbar-btn, body.weight-thin .tab-icon,
+  body.weight-thin .chat-tab, body.weight-thin button, body.weight-thin #toolbar button { border-width: 1px !important; }
+
+  body.weight-medium .unlockable, body.weight-medium .clone-panel, body.weight-medium .popout-panel { border-width: 2px !important; }
+  body.weight-medium .inv-slot, body.weight-medium .taskbar-btn, body.weight-medium .tab-icon,
+  body.weight-medium .chat-tab, body.weight-medium button, body.weight-medium #toolbar button { border-width: 2px !important; }
+
+  body.weight-thick .unlockable, body.weight-thick .clone-panel, body.weight-thick .popout-panel { border-width: 4px !important; }
+  body.weight-thick .inv-slot, body.weight-thick .taskbar-btn, body.weight-thick .tab-icon,
+  body.weight-thick .chat-tab, body.weight-thick button, body.weight-thick #toolbar button { border-width: 3px !important; }
+
+  /* ── Border Style ──────────────────────────── */
+  body.style-dashed .unlockable, body.style-dashed .clone-panel, body.style-dashed .popout-panel,
+  body.style-dashed .inv-slot, body.style-dashed .taskbar-btn, body.style-dashed .tab-icon,
+  body.style-dashed .chat-tab, body.style-dashed button, body.style-dashed #toolbar button { border-style: dashed !important; }
+
+  body.style-dotted .unlockable, body.style-dotted .clone-panel, body.style-dotted .popout-panel,
+  body.style-dotted .inv-slot, body.style-dotted .taskbar-btn, body.style-dotted .tab-icon,
+  body.style-dotted .chat-tab, body.style-dotted button, body.style-dotted #toolbar button { border-style: dotted !important; }
+
+  body.style-double .unlockable, body.style-double .clone-panel, body.style-double .popout-panel { border-style: double !important; border-width: 4px !important; }
+  body.style-double .inv-slot, body.style-double .taskbar-btn, body.style-double .tab-icon,
+  body.style-double .chat-tab, body.style-double button, body.style-double #toolbar button { border-style: double !important; border-width: 3px !important; }
+
+  /* ── Shadow / Depth ────────────────────────── */
+  body.depth-none .unlockable, body.depth-none .clone-panel, body.depth-none .popout-panel { box-shadow: none !important; }
+
+  body.depth-subtle .unlockable, body.depth-subtle .clone-panel, body.depth-subtle .popout-panel {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2) !important;
+  }
+  body.depth-lifted .unlockable, body.depth-lifted .clone-panel, body.depth-lifted .popout-panel {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3) !important;
+  }
+  body.depth-floating .unlockable, body.depth-floating .clone-panel, body.depth-floating .popout-panel {
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05) !important;
+  }
+
+  /* ── Glow ───────────────────────────────────── */
+  body.glow-accent .unlockable, body.glow-accent .clone-panel, body.glow-accent .popout-panel {
+    box-shadow: 0 0 12px rgba(212,168,83,0.3), 0 0 4px rgba(212,168,83,0.15), inset 0 0 1px rgba(212,168,83,0.1) !important;
+  }
+  body.glow-accent .taskbar-btn.active { box-shadow: 0 0 8px rgba(212,168,83,0.4) !important; }
+
+  body.glow-neon .unlockable, body.glow-neon .clone-panel, body.glow-neon .popout-panel {
+    box-shadow: 0 0 8px rgba(0,255,255,0.3), 0 0 20px rgba(0,255,255,0.15), 0 0 40px rgba(0,255,255,0.05), inset 0 0 1px rgba(0,255,255,0.1) !important;
+    border-color: rgba(0,255,255,0.3) !important;
+  }
+  body.glow-neon .taskbar-btn.active { box-shadow: 0 0 8px rgba(0,255,255,0.4) !important; }
+  body.glow-neon .tab-icon.active { box-shadow: 0 0 6px rgba(0,255,255,0.3) !important; }
+
+  body.glow-soft .unlockable, body.glow-soft .clone-panel, body.glow-soft .popout-panel {
+    box-shadow: 0 0 24px rgba(255,255,255,0.06), 0 0 8px rgba(255,255,255,0.04) !important;
+  }
+
+  /* ── Texture ───────────────────────────────── */
+  body.tex-noise .unlockable::before, body.tex-noise .clone-panel::before, body.tex-noise .popout-panel::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.08;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  body.tex-noise .unlockable, body.tex-noise .clone-panel, body.tex-noise .popout-panel { position: relative; }
+
+  body.tex-scanlines .unlockable::before, body.tex-scanlines .clone-panel::before, body.tex-scanlines .popout-panel::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.06;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.4) 2px, rgba(0,0,0,0.4) 3px);
+  }
+  body.tex-scanlines .unlockable, body.tex-scanlines .clone-panel, body.tex-scanlines .popout-panel { position: relative; }
+
+  body.tex-parchment .unlockable::before, body.tex-parchment .clone-panel::before, body.tex-parchment .popout-panel::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.04;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(180,140,80,0.3), transparent 70%),
+      radial-gradient(ellipse at 80% 20%, rgba(160,120,60,0.2), transparent 60%),
+      radial-gradient(ellipse at 50% 90%, rgba(140,100,40,0.2), transparent 60%),
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.5' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  body.tex-parchment .unlockable, body.tex-parchment .clone-panel, body.tex-parchment .popout-panel { position: relative; }
+
+  /* Carbon fiber: tight diagonal weave */
+  body.tex-carbon .unlockable::before, body.tex-carbon .clone-panel::before, body.tex-carbon .popout-panel::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.07;
+    background:
+      linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.03) 75%),
+      linear-gradient(-45deg, rgba(255,255,255,0.03) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.03) 75%);
+    background-size: 4px 4px;
+  }
+  body.tex-carbon .unlockable, body.tex-carbon .clone-panel, body.tex-carbon .popout-panel { position: relative; }
+
+  /* Diamond plate: offset bumps */
+  body.tex-diamond .unlockable::before, body.tex-diamond .clone-panel::before, body.tex-diamond .popout-panel::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.06;
+    background:
+      radial-gradient(ellipse 6px 3px at 50% 50%, rgba(255,255,255,0.15), transparent),
+      radial-gradient(ellipse 6px 3px at 0% 0%, rgba(255,255,255,0.15), transparent);
+    background-size: 12px 10px;
+  }
+  body.tex-diamond .unlockable, body.tex-diamond .clone-panel, body.tex-diamond .popout-panel { position: relative; }
+
+  /* Circuit board: grid + traces */
+  body.tex-circuit .unlockable::before, body.tex-circuit .clone-panel::before, body.tex-circuit .popout-panel::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.05;
+    background:
+      linear-gradient(0deg, rgba(0,255,180,0.15) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,180,0.15) 1px, transparent 1px),
+      radial-gradient(circle 2px, rgba(0,255,180,0.3), transparent 2px);
+    background-size: 20px 20px, 20px 20px, 40px 40px;
+    background-position: 0 0, 0 0, 10px 10px;
+  }
+  body.tex-circuit .unlockable, body.tex-circuit .clone-panel, body.tex-circuit .popout-panel { position: relative; }
+
+  /* Hexagons */
+  body.tex-hex .unlockable::before, body.tex-hex .clone-panel::before, body.tex-hex .popout-panel::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.06;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49'%3E%3Cpath d='M14 0L28 8.5V24.5L14 33L0 24.5V8.5Z' fill='none' stroke='rgba(255,255,255,0.3)' stroke-width='0.5'/%3E%3Cpath d='M14 16.5L28 25V41L14 49.5L0 41V25Z' fill='none' stroke='rgba(255,255,255,0.3)' stroke-width='0.5'/%3E%3C/svg%3E");
+    background-size: 28px 49px;
+  }
+  body.tex-hex .unlockable, body.tex-hex .clone-panel, body.tex-hex .popout-panel { position: relative; }
+
+  /* Wood grain */
+  body.tex-wood .unlockable::before, body.tex-wood .clone-panel::before, body.tex-wood .popout-panel::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.05;
+    background:
+      repeating-linear-gradient(2deg, rgba(140,100,50,0.15), rgba(140,100,50,0.02) 2px, transparent 2px, transparent 8px),
+      repeating-linear-gradient(178deg, rgba(120,80,30,0.1), transparent 3px, transparent 12px);
+  }
+  body.tex-wood .unlockable, body.tex-wood .clone-panel, body.tex-wood .popout-panel { position: relative; }
+
+  /* Marble: veined stone */
+  body.tex-marble .unlockable::before, body.tex-marble .clone-panel::before, body.tex-marble .popout-panel::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.05;
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.08), transparent 50%),
+      radial-gradient(ellipse at 70% 80%, rgba(200,200,220,0.06), transparent 40%),
+      linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.04) 31%, transparent 32%),
+      linear-gradient(135deg, transparent 60%, rgba(255,255,255,0.03) 61%, transparent 62%),
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.02' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  body.tex-marble .unlockable, body.tex-marble .clone-panel, body.tex-marble .popout-panel { position: relative; }
+
+  /* Crosshatch */
+  body.tex-crosshatch .unlockable::before, body.tex-crosshatch .clone-panel::before, body.tex-crosshatch .popout-panel::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.05;
+    background:
+      repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.1) 4px, rgba(255,255,255,0.1) 5px),
+      repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(255,255,255,0.1) 4px, rgba(255,255,255,0.1) 5px);
+  }
+  body.tex-crosshatch .unlockable, body.tex-crosshatch .clone-panel, body.tex-crosshatch .popout-panel { position: relative; }
+
+  /* Linen: soft woven fabric */
+  body.tex-linen .unlockable::before, body.tex-linen .clone-panel::before, body.tex-linen .popout-panel::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.04;
+    background:
+      linear-gradient(0deg, rgba(255,255,255,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 3px 3px;
+  }
+  body.tex-linen .unlockable, body.tex-linen .clone-panel, body.tex-linen .popout-panel { position: relative; }
+
+  /* ── Logo watermarks on panels ─────────────── */
+  body.logo-sword .unlockable::after, body.logo-sword .clone-panel::after { content: '⚔'; }
+  body.logo-skull .unlockable::after, body.logo-skull .clone-panel::after { content: '💀'; }
+  body.logo-rune .unlockable::after, body.logo-rune .clone-panel::after { content: '᚛'; }
+  body.logo-shield .unlockable::after, body.logo-shield .clone-panel::after { content: '🛡'; }
+  body.logo-crown .unlockable::after, body.logo-crown .clone-panel::after { content: '👑'; }
+  body.logo-dragon .unlockable::after, body.logo-dragon .clone-panel::after { content: '🐉'; }
+  body.logo-star .unlockable::after, body.logo-star .clone-panel::after { content: '✧'; }
+  body.logo-fire .unlockable::after, body.logo-fire .clone-panel::after { content: '🔥'; }
+  body.logo-gem .unlockable::after, body.logo-gem .clone-panel::after { content: '💎'; }
+  body.logo-eye .unlockable::after, body.logo-eye .clone-panel::after { content: '👁'; }
+
+  body[class*="logo-"] .unlockable::after, body[class*="logo-"] .clone-panel::after {
+    position: absolute; right: 12px; bottom: 12px; font-size: 48px; opacity: 0.06;
+    pointer-events: none; z-index: 0; line-height: 1;
+  }
+  body[class*="logo-"] .unlockable, body[class*="logo-"] .clone-panel { position: relative; overflow: hidden; }
+
+  /* ── Stickers ──────────────────────────────── */
+  .sticker {
+    position: fixed; z-index: 500; user-select: none;
+    font-size: 40px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    transition: transform 0.1s;
+    pointer-events: none; cursor: default;
+  }
+  body.ui-unlocked .sticker { pointer-events: auto; cursor: grab; }
+  body.ui-unlocked .sticker:hover { transform: scale(1.15); }
+  .sticker:active { cursor: grabbing; }
+  .sticker .sticker-delete {
+    display: none; position: absolute; top: -8px; right: -8px;
+    background: #c00; color: #fff; border: none; border-radius: 50%;
+    width: 16px; height: 16px; font-size: 10px; line-height: 16px; text-align: center;
+    cursor: pointer; padding: 0;
+  }
+  body.ui-unlocked .sticker .sticker-delete { display: block; }
+
+  #sticker-picker {
+    display: none; position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
+    background: rgba(20,20,20,0.95); border: 1px solid #444; border-radius: 8px;
+    padding: 12px; z-index: 600; max-width: 400px; backdrop-filter: blur(12px);
+  }
+  #sticker-picker.open { display: flex; flex-wrap: wrap; gap: 4px; }
+  #sticker-picker .sticker-option {
+    font-size: 28px; cursor: pointer; padding: 4px 6px; border-radius: 4px;
+    transition: background 0.15s; line-height: 1;
+  }
+  #sticker-picker .sticker-option:hover { background: rgba(255,255,255,0.15); }
+
+  /* Glass mode: frosted translucent panels */
+  body.glass-mode .unlockable,
+  body.glass-mode .clone-panel,
+  body.glass-mode .popout-panel {
+    background: rgba(20, 20, 20, 0.45) !important;
+    backdrop-filter: blur(16px) saturate(1.4) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(1.4) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  }
+  body.glass-mode #tab-content,
+  body.glass-mode #log,
+  body.glass-mode .clone-chat-log,
+  body.glass-mode .clone-tab-content {
+    background: transparent !important;
+  }
+  body.glass-mode #tab-icons,
+  body.glass-mode .clone-tab-icons,
+  body.glass-mode #chat-tabs {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  body.glass-mode .tab-icon {
+    background: transparent !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+  body.glass-mode .tab-icon.active {
+    background: rgba(255, 255, 255, 0.1) !important;
+  }
+  body.glass-mode .unlock-handle {
+    background: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+  body.glass-mode #chat-input {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  body.glass-mode .chat-tab {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+  body.glass-mode .inv-slot {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  body.glass-mode #toolbar {
+    background: rgba(20, 20, 20, 0.45) !important;
+    backdrop-filter: blur(16px) saturate(1.4) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(1.4) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+  }
+  body.glass-mode #taskbar {
+    background: rgba(20, 20, 20, 0.35) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+  }
+
   .os-panel {
     position: fixed; z-index: 60; display: none;
     background: var(--panel-bg); border: 2px solid var(--panel-border);
@@ -35,7 +459,11 @@
   .os-panel .resize-handle {
     position: absolute; right: 0; bottom: 0; width: 12px; height: 12px; cursor: se-resize;
     background: linear-gradient(135deg, transparent 50%, var(--panel-border-light) 50%);
+    display: none;
   }
+  body.ui-unlocked .os-panel .resize-handle { display: block; }
+  .os-panel .drag-handle { cursor: default; }
+  body.ui-unlocked .os-panel .drag-handle { cursor: n-resize; }
 
   /* ── Sidebar ──────────────────────────────────────────────────────── */
   #panel-sidebar {
@@ -655,7 +1083,7 @@
 
 <div id="conn" style="display:none">Connecting to server...</div>
 <div id="anchor-grid"></div>
-<div id="ui-unlock-banner">UI UNLOCKED — <span>U</span> lock — <button id="ui-reset-btn" onclick="resetUIAndReload()" style="margin-left:4px;background:#600;color:#fff;border:1px solid #a00;padding:2px 8px;cursor:pointer;font:bold 11px monospace;border-radius:3px;">RESET</button><span id="anchor-controls"> X <button onclick="changeAnchor('x',-1)">-</button><span class="anchor-label" id="anchor-x-val">4</span><button onclick="changeAnchor('x',1)">+</button> Y <button onclick="changeAnchor('y',-1)">-</button><span class="anchor-label" id="anchor-y-val">3</span><button onclick="changeAnchor('y',1)">+</button></span></div>
+<div id="ui-unlock-banner">UI UNLOCKED — <span>U</span> lock — <button id="ui-reset-btn" onclick="resetUIAndReload()" style="margin-left:4px;background:#600;color:#fff;border:1px solid #a00;padding:2px 8px;cursor:pointer;font:bold 11px monospace;border-radius:3px;">RESET</button><span id="anchor-controls"> X <button onclick="changeAnchor('x',-1)">-</button><span class="anchor-label" id="anchor-x-val">4</span><button onclick="changeAnchor('x',1)">+</button> Y <button onclick="changeAnchor('y',-1)">-</button><span class="anchor-label" id="anchor-y-val">3</span><button onclick="changeAnchor('y',1)">+</button></span> <span style="margin-left:8px;opacity:0.7;">|</span> <label style="margin-left:8px;cursor:pointer;" title="Set ALL panel backgrounds">All BG <input type="color" id="universal-bg" value="#1a1510" style="width:20px;height:16px;border:none;padding:0;cursor:pointer;vertical-align:middle;"></label> <label style="cursor:pointer;" title="Set ALL label bar colors">All Label <input type="color" id="universal-label" value="#d4981f" style="width:20px;height:16px;border:none;padding:0;cursor:pointer;vertical-align:middle;"></label> <button id="btn-corners" onclick="cycleCorners()" style="margin-left:8px;background:#333;color:#ccc;border:1px solid #555;padding:2px 8px;cursor:pointer;font:bold 11px monospace;border-radius:3px;" title="Cycle corner style: Round → Square → Chamfer">◯ Round</button> <button id="btn-edges" onclick="toggleBevel()" style="background:#333;color:#ccc;border:1px solid #555;padding:2px 8px;cursor:pointer;font:bold 11px monospace;" title="Toggle beveled 3D edges">▭ Flat</button> <button id="btn-inner" onclick="toggleInnerEdges()" style="background:#333;color:#ccc;border:1px solid #555;padding:2px 8px;cursor:pointer;font:bold 11px monospace;" title="Toggle inner panel dividers">⊟ Inner</button> <button id="btn-weight" onclick="cycleWeight()" style="background:#333;color:#ccc;border:1px solid #555;padding:2px 8px;cursor:pointer;font:bold 11px monospace;" title="Cycle border weight">⊡ Default</button> <button id="btn-style" onclick="cycleStyle()" style="background:#333;color:#ccc;border:1px solid #555;padding:2px 8px;cursor:pointer;font:bold 11px monospace;" title="Cycle border style">― Solid</button> <button id="btn-depth" onclick="cycleDepth()" style="background:#333;color:#ccc;border:1px solid #555;padding:2px 8px;cursor:pointer;font:bold 11px monospace;" title="Cycle shadow depth">◫ Default</button> <button id="btn-glow" onclick="cycleGlow()" style="background:#333;color:#ccc;border:1px solid #555;padding:2px 8px;cursor:pointer;font:bold 11px monospace;" title="Cycle glow effect">✦ No Glow</button> <button id="btn-texture" onclick="cycleTexture()" style="background:#333;color:#ccc;border:1px solid #555;padding:2px 8px;cursor:pointer;font:bold 11px monospace;" title="Cycle panel texture">▦ No Tex</button> <button id="btn-logo" onclick="cycleLogo()" style="background:#333;color:#ccc;border:1px solid #555;padding:2px 8px;cursor:pointer;font:bold 11px monospace;" title="Cycle panel logo watermark">⚑ No Logo</button> <button id="btn-stickers" onclick="toggleStickerPicker()" style="background:#333;color:#ccc;border:1px solid #555;padding:2px 8px;cursor:pointer;font:bold 11px monospace;" title="Place stickers on screen">🎨 Stickers</button> <button id="btn-glass" onclick="toggleGlass()" style="background:#333;color:#ccc;border:1px solid #555;padding:2px 8px;cursor:pointer;font:bold 11px monospace;" title="Toggle glass/frosted panel effect">◇ Glass</button> <button id="btn-all-labels" onclick="toggleAllLabels()" style="background:#333;color:#ccc;border:1px solid #555;padding:2px 8px;cursor:pointer;font:bold 11px monospace;" title="Toggle labels on/off for all panels">T All Labels</button> <span style="margin-left:4px;opacity:0.7;">|</span> <button onclick="changeUniversalFont(-1)" style="margin-left:4px;background:#333;color:#ccc;border:1px solid #555;padding:2px 6px;cursor:pointer;font:bold 13px monospace;" title="Decrease all text size">a</button><span id="universal-font-val" style="display:inline-block;min-width:22px;text-align:center;font:bold 11px monospace;color:#ccc;vertical-align:middle;">14</span><button onclick="changeUniversalFont(1)" style="background:#333;color:#ccc;border:1px solid #555;padding:2px 6px;cursor:pointer;font:bold 15px monospace;" title="Increase all text size">A</button></div>
 
 <!-- Taskbar -->
 <div id="taskbar"></div>
@@ -831,9 +1259,7 @@ const MIN_TILE = 2, MAX_TILE = 64;
 const VIEW_W = 160, VIEW_H = 120;
 
 function getGameArea() {
-  const sidebarW = document.getElementById('panel-sidebar').offsetWidth || 205;
-  const chatH = document.getElementById('panel-chat').offsetHeight || 165;
-  return { w: window.innerWidth - sidebarW, h: window.innerHeight };
+  return { w: window.innerWidth, h: window.innerHeight };
 }
 function resizeCanvas() {
   const area = getGameArea();
@@ -882,6 +1308,7 @@ function initPanelSystem() {
   const sidebar = document.getElementById('panel-sidebar');
   let sidebarDrag = false, sidebarStartX = 0, sidebarStartW = 0;
   sidebar.addEventListener('mousedown', (e) => {
+    if (!uiUnlocked) return;
     if (e.offsetX < 8) {
       sidebarDrag = true; sidebarStartX = e.clientX; sidebarStartW = sidebar.offsetWidth;
       e.preventDefault();
@@ -902,6 +1329,7 @@ function initPanelSystem() {
   const chatHandle = chat.querySelector('.drag-handle');
   if (chatHandle) {
     chatHandle.addEventListener('mousedown', (e) => {
+      if (!uiUnlocked) return;
       chatDrag.active = true; chatDrag.startY = e.clientY; chatDrag.startH = chat.offsetHeight;
       e.preventDefault();
     });
@@ -972,8 +1400,575 @@ function resetUILayout() {
   localStorage.removeItem('miniscape-ui-layout');
 }
 
+// ── Corner Style (Round / Square / Chamfer) ──────────────────────────────────
+const cornerModes = ['round', 'square', 'chamfer'];
+const cornerLabels = { round: '◯ Round', square: '◻ Square', chamfer: '⬡ Chamfer' };
+let cornerMode = localStorage.getItem('miniscape-corner-mode') || 'round';
+// Migrate old squareCorners setting
+if (localStorage.getItem('miniscape-square-corners') === '1' && cornerMode === 'round') {
+  cornerMode = 'square';
+  localStorage.setItem('miniscape-corner-mode', 'square');
+  localStorage.removeItem('miniscape-square-corners');
+}
+let squareCorners = cornerMode === 'square' || cornerMode === 'chamfer'; // for canvas compat
+
+function applyCornerMode() {
+  document.body.classList.remove('square-corners', 'chamfer-corners');
+  if (cornerMode === 'square') document.body.classList.add('square-corners');
+  else if (cornerMode === 'chamfer') document.body.classList.add('chamfer-corners');
+  squareCorners = cornerMode !== 'round'; // canvas uses this for roundRect
+  const btn = document.getElementById('btn-corners');
+  if (btn) btn.textContent = cornerLabels[cornerMode];
+}
+applyCornerMode();
+
+function cycleCorners() {
+  const idx = cornerModes.indexOf(cornerMode);
+  cornerMode = cornerModes[(idx + 1) % cornerModes.length];
+  localStorage.setItem('miniscape-corner-mode', cornerMode);
+  applyCornerMode();
+}
+
+// ── Edge Profile (Flat / Bevel / Inset / Ridge / Groove) ─────────────────────
+const edgeModes = ['flat', 'bevel', 'inset', 'ridge', 'groove'];
+const edgeLabels = { flat: '▭ Flat', bevel: '▥ Bevel', inset: '▣ Inset', ridge: '▤ Ridge', groove: '▧ Groove' };
+let edgeMode = localStorage.getItem('miniscape-edge-mode') || 'flat';
+// Migrate old bevel setting
+if (localStorage.getItem('miniscape-bevel-edges') === '1' && edgeMode === 'flat') {
+  edgeMode = 'bevel';
+  localStorage.setItem('miniscape-edge-mode', 'bevel');
+  localStorage.removeItem('miniscape-bevel-edges');
+}
+
+function applyEdgeMode() {
+  edgeModes.forEach(m => document.body.classList.remove('edge-' + m));
+  if (edgeMode !== 'flat') document.body.classList.add('edge-' + edgeMode);
+  const btn = document.getElementById('btn-edges');
+  if (btn) btn.textContent = edgeLabels[edgeMode];
+}
+applyEdgeMode();
+
+function toggleBevel() {
+  const idx = edgeModes.indexOf(edgeMode);
+  edgeMode = edgeModes[(idx + 1) % edgeModes.length];
+  localStorage.setItem('miniscape-edge-mode', edgeMode);
+  applyEdgeMode();
+}
+
+// ── Inner Edges (dividers inside panels) ─────────────────────────────────────
+let innerEdges = localStorage.getItem('miniscape-inner-edges') === '1';
+function applyInnerEdges() {
+  document.body.classList.toggle('inner-edges', innerEdges);
+  const btn = document.getElementById('btn-inner');
+  if (btn) btn.textContent = innerEdges ? '⊞ Inner On' : '⊟ Inner Off';
+}
+applyInnerEdges();
+
+function toggleInnerEdges() {
+  innerEdges = !innerEdges;
+  localStorage.setItem('miniscape-inner-edges', innerEdges ? '1' : '0');
+  applyInnerEdges();
+}
+
+// ── Border Weight (Default / None / Thin / Medium / Thick) ───────────────────
+const weightModes = ['default', 'none', 'thin', 'medium', 'thick'];
+const weightLabels = { default: '⊡ Default', none: '⊠ None', thin: '⊡ Thin', medium: '⊡ Medium', thick: '⊡ Thick' };
+let weightMode = localStorage.getItem('miniscape-weight-mode') || 'default';
+
+function applyWeight() {
+  weightModes.forEach(m => document.body.classList.remove('weight-' + m));
+  if (weightMode !== 'default') document.body.classList.add('weight-' + weightMode);
+  const btn = document.getElementById('btn-weight');
+  if (btn) btn.textContent = weightLabels[weightMode];
+}
+applyWeight();
+
+function cycleWeight() {
+  const idx = weightModes.indexOf(weightMode);
+  weightMode = weightModes[(idx + 1) % weightModes.length];
+  localStorage.setItem('miniscape-weight-mode', weightMode);
+  applyWeight();
+}
+
+// ── Border Style (Solid / Dashed / Dotted / Double) ──────────────────────────
+const styleModes = ['solid', 'dashed', 'dotted', 'double'];
+const styleLabels = { solid: '― Solid', dashed: '┄ Dashed', dotted: '··· Dotted', double: '═ Double' };
+let styleMode = localStorage.getItem('miniscape-style-mode') || 'solid';
+
+function applyStyleMode() {
+  styleModes.forEach(m => document.body.classList.remove('style-' + m));
+  if (styleMode !== 'solid') document.body.classList.add('style-' + styleMode);
+  const btn = document.getElementById('btn-style');
+  if (btn) btn.textContent = styleLabels[styleMode];
+}
+applyStyleMode();
+
+function cycleStyle() {
+  const idx = styleModes.indexOf(styleMode);
+  styleMode = styleModes[(idx + 1) % styleModes.length];
+  localStorage.setItem('miniscape-style-mode', styleMode);
+  applyStyleMode();
+}
+
+// ── Shadow / Depth (Default / None / Subtle / Lifted / Floating) ─────────────
+const depthModes = ['default', 'none', 'subtle', 'lifted', 'floating'];
+const depthLabels = { default: '◫ Default', none: '◻ No Shadow', subtle: '◫ Subtle', lifted: '◫ Lifted', floating: '◫ Floating' };
+let depthMode = localStorage.getItem('miniscape-depth-mode') || 'default';
+
+function applyDepth() {
+  depthModes.forEach(m => document.body.classList.remove('depth-' + m));
+  if (depthMode !== 'default') document.body.classList.add('depth-' + depthMode);
+  const btn = document.getElementById('btn-depth');
+  if (btn) btn.textContent = depthLabels[depthMode];
+}
+applyDepth();
+
+function cycleDepth() {
+  const idx = depthModes.indexOf(depthMode);
+  depthMode = depthModes[(idx + 1) % depthModes.length];
+  localStorage.setItem('miniscape-depth-mode', depthMode);
+  applyDepth();
+}
+
+// ── Glow (None / Accent / Neon / Soft) ───────────────────────────────────────
+const glowModes = ['none', 'accent', 'neon', 'soft'];
+const glowLabels = { none: '✦ No Glow', accent: '✦ Accent', neon: '✦ Neon', soft: '✦ Soft' };
+let glowMode = localStorage.getItem('miniscape-glow-mode') || 'none';
+
+function applyGlow() {
+  glowModes.forEach(m => document.body.classList.remove('glow-' + m));
+  if (glowMode !== 'none') document.body.classList.add('glow-' + glowMode);
+  const btn = document.getElementById('btn-glow');
+  if (btn) btn.textContent = glowLabels[glowMode];
+}
+applyGlow();
+
+function cycleGlow() {
+  const idx = glowModes.indexOf(glowMode);
+  glowMode = glowModes[(idx + 1) % glowModes.length];
+  localStorage.setItem('miniscape-glow-mode', glowMode);
+  applyGlow();
+}
+
+// ── Texture ──────────────────────────────────────────────────────────────────
+const texModes = ['none', 'noise', 'scanlines', 'parchment', 'carbon', 'diamond', 'circuit', 'hex', 'wood', 'marble', 'crosshatch', 'linen'];
+const texLabels = {
+  none:'▦ No Tex', noise:'▦ Noise', scanlines:'▦ Scanlines', parchment:'▦ Parchment',
+  carbon:'▦ Carbon', diamond:'▦ Diamond', circuit:'▦ Circuit', hex:'▦ Hexagon',
+  wood:'▦ Wood', marble:'▦ Marble', crosshatch:'▦ Crosshatch', linen:'▦ Linen'
+};
+let texMode = localStorage.getItem('miniscape-tex-mode') || 'none';
+
+function applyTexture() {
+  texModes.forEach(m => document.body.classList.remove('tex-' + m));
+  if (texMode !== 'none') document.body.classList.add('tex-' + texMode);
+  const btn = document.getElementById('btn-texture');
+  if (btn) btn.textContent = texLabels[texMode];
+}
+applyTexture();
+
+function cycleTexture() {
+  const idx = texModes.indexOf(texMode);
+  texMode = texModes[(idx + 1) % texModes.length];
+  localStorage.setItem('miniscape-tex-mode', texMode);
+  applyTexture();
+}
+
+// ── Logo Watermarks ─────────────────────────────────────────────────────────
+const logoModes = ['none', 'sword', 'skull', 'rune', 'shield', 'crown', 'dragon', 'star', 'fire', 'gem', 'eye'];
+const logoLabels = {
+  none:'⚑ No Logo', sword:'⚔ Sword', skull:'💀 Skull', rune:'᚛ Rune', shield:'🛡 Shield',
+  crown:'👑 Crown', dragon:'🐉 Dragon', star:'✧ Star', fire:'🔥 Fire', gem:'💎 Gem', eye:'👁 Eye'
+};
+let logoMode = localStorage.getItem('miniscape-logo-mode') || 'none';
+
+function applyLogo() {
+  logoModes.forEach(m => document.body.classList.remove('logo-' + m));
+  if (logoMode !== 'none') document.body.classList.add('logo-' + logoMode);
+  const btn = document.getElementById('btn-logo');
+  if (btn) btn.textContent = logoLabels[logoMode];
+}
+applyLogo();
+
+function cycleLogo() {
+  const idx = logoModes.indexOf(logoMode);
+  logoMode = logoModes[(idx + 1) % logoModes.length];
+  localStorage.setItem('miniscape-logo-mode', logoMode);
+  applyLogo();
+}
+
+// ── Sticker System ──────────────────────────────────────────────────────────
+const stickerEmojis = [
+  '⚔️','🗡️','🏹','🛡️','💀','👑','🐉','🔥','💎','👁️','✨','⭐','🌙','☀️','🌟',
+  '💰','🪙','🏆','🎯','🎲','🎭','🧙','🧝','🧛','👹','💣','⚡','🌊','🍖','🍺',
+  '🗺️','🏰','⛏️','🪓','🎣','🌲','🪨','🦴','📜','🔮','🧪','⚗️','🕯️','🔔','🎪',
+  '❤️','💛','💚','💙','💜','🖤','🤍','💯','🔱','⚜️','☠️','🦇','🐺','🦅','🐍'
+];
+
+let stickers = [];
+try { stickers = JSON.parse(localStorage.getItem('miniscape-stickers') || '[]'); } catch(e) { stickers = []; }
+
+function saveStickers() {
+  localStorage.setItem('miniscape-stickers', JSON.stringify(stickers.map(s => ({ emoji: s.emoji, x: s.x, y: s.y, size: s.size }))));
+}
+
+function createStickerEl(s) {
+  const el = document.createElement('div');
+  el.className = 'sticker';
+  el.style.left = s.x + 'px';
+  el.style.top = s.y + 'px';
+  el.style.fontSize = (s.size || 40) + 'px';
+  el.innerHTML = s.emoji + '<button class="sticker-delete">&times;</button>';
+  s.el = el;
+
+  // Delete button
+  el.querySelector('.sticker-delete').addEventListener('click', (e) => {
+    e.stopPropagation();
+    el.remove();
+    stickers = stickers.filter(st => st !== s);
+    saveStickers();
+  });
+
+  // Drag
+  let dragging = false, offX, offY;
+  el.addEventListener('mousedown', (e) => {
+    if (e.target.classList.contains('sticker-delete')) return;
+    if (!document.body.classList.contains('ui-unlocked')) return;
+    dragging = true;
+    offX = e.clientX - el.offsetLeft;
+    offY = e.clientY - el.offsetTop;
+    el.style.zIndex = 501;
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    s.x = e.clientX - offX;
+    s.y = e.clientY - offY;
+    el.style.left = s.x + 'px';
+    el.style.top = s.y + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (dragging) { dragging = false; el.style.zIndex = 500; saveStickers(); }
+  });
+
+  // Scroll to resize
+  el.addEventListener('wheel', (e) => {
+    if (!document.body.classList.contains('ui-unlocked')) return;
+    e.preventDefault();
+    s.size = Math.max(16, Math.min(200, (s.size || 40) + (e.deltaY > 0 ? -4 : 4)));
+    el.style.fontSize = s.size + 'px';
+    saveStickers();
+  });
+
+  document.body.appendChild(el);
+}
+
+// Restore saved stickers
+stickers.forEach(s => createStickerEl(s));
+
+function placeSticker(emoji) {
+  const s = { emoji, x: window.innerWidth / 2 - 20, y: window.innerHeight / 2 - 20, size: 40 };
+  stickers.push(s);
+  createStickerEl(s);
+  saveStickers();
+}
+
+function toggleStickerPicker() {
+  const picker = document.getElementById('sticker-picker');
+  picker.classList.toggle('open');
+}
+
+// Build sticker picker
+{
+  const picker = document.createElement('div');
+  picker.id = 'sticker-picker';
+  stickerEmojis.forEach(emoji => {
+    const opt = document.createElement('span');
+    opt.className = 'sticker-option';
+    opt.textContent = emoji;
+    opt.addEventListener('click', () => { placeSticker(emoji); document.getElementById('sticker-picker').classList.remove('open'); });
+    picker.appendChild(opt);
+  });
+  document.body.appendChild(picker);
+}
+
+let glassMode = localStorage.getItem('miniscape-glass') === '1';
+if (glassMode) document.body.classList.add('glass-mode');
+
+function hexToGlass(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function applyGlassToAll() {
+  const defaultGlass = 'rgba(20, 20, 20, 0.45)';
+  const clearBg = 'transparent';
+  const subtleBg = 'rgba(255,255,255,0.05)';
+
+  // Every panel, clone, popout, toolbar, taskbar — everything
+  const allEls = [
+    ...document.querySelectorAll('.unlockable, .clone-panel, .popout-panel, #taskbar'),
+    ...(typeof clonedPanels !== 'undefined' ? clonedPanels.map(c => c.el) : [])
+  ];
+
+  // Find a common color from any panel for shared elements like taskbar
+  const anyBg = Object.values(panelCustomize).find(c => c.bgColor)?.bgColor;
+
+  allEls.forEach(el => {
+    if (glassMode) {
+      const saved = panelCustomize[el.id]?.bgColor || anyBg;
+      const bg = saved ? hexToGlass(saved, 0.5) : defaultGlass;
+      el.style.setProperty('background', bg, 'important');
+      el.style.setProperty('backdrop-filter', 'blur(16px) saturate(1.4)', 'important');
+      el.style.setProperty('-webkit-backdrop-filter', 'blur(16px) saturate(1.4)', 'important');
+      el.style.setProperty('border-color', 'rgba(255,255,255,0.12)', 'important');
+      el.style.setProperty('box-shadow', '0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)', 'important');
+    } else {
+      el.style.removeProperty('backdrop-filter');
+      el.style.removeProperty('-webkit-backdrop-filter');
+      el.style.removeProperty('box-shadow');
+      el.style.removeProperty('border-color');
+      const id = el.id;
+      const saved = panelCustomize[id]?.bgColor;
+      if (saved) {
+        applyBgToPanel(el, saved, panelCustomize[id]?.textColor || autoContrastText(saved));
+      } else {
+        el.style.removeProperty('background');
+      }
+    }
+  });
+
+  // All inner containers that have their own backgrounds
+  const innerSelectors = '#log, #tab-content, .clone-tab-content, .clone-chat-log, #chat-input';
+  document.querySelectorAll(innerSelectors).forEach(el => {
+    if (glassMode) el.style.setProperty('background', clearBg, 'important');
+    else el.style.removeProperty('background');
+  });
+
+  // Tab icon rows and chat tabs
+  document.querySelectorAll('#tab-icons, .clone-tab-icons, #chat-tabs').forEach(el => {
+    if (glassMode) {
+      el.style.setProperty('background', subtleBg, 'important');
+      el.style.setProperty('border-color', 'rgba(255,255,255,0.1)', 'important');
+    } else {
+      el.style.removeProperty('background');
+      el.style.removeProperty('border-color');
+    }
+  });
+
+  // Individual tab icons
+  document.querySelectorAll('.tab-icon').forEach(el => {
+    if (glassMode) {
+      el.style.setProperty('background', clearBg, 'important');
+      el.style.setProperty('border-color', 'rgba(255,255,255,0.08)', 'important');
+    } else {
+      el.style.removeProperty('background');
+      el.style.removeProperty('border-color');
+    }
+  });
+
+  // Chat tabs
+  document.querySelectorAll('.chat-tab').forEach(el => {
+    if (glassMode) {
+      el.style.setProperty('background', clearBg, 'important');
+      el.style.setProperty('border-color', 'rgba(255,255,255,0.08)', 'important');
+    } else {
+      el.style.removeProperty('background');
+      el.style.removeProperty('border-color');
+    }
+  });
+
+  // Chat input
+  document.querySelectorAll('#chat-input').forEach(el => {
+    if (glassMode) {
+      el.style.setProperty('background', 'rgba(255,255,255,0.06)', 'important');
+      el.style.setProperty('border-color', 'rgba(255,255,255,0.1)', 'important');
+    } else {
+      el.style.removeProperty('background');
+      el.style.removeProperty('border-color');
+    }
+  });
+
+  // Taskbar buttons
+  document.querySelectorAll('.taskbar-btn').forEach(el => {
+    if (glassMode) {
+      el.style.setProperty('background', 'rgba(255,255,255,0.08)', 'important');
+      el.style.setProperty('border-color', 'rgba(255,255,255,0.1)', 'important');
+    } else {
+      el.style.removeProperty('background');
+      el.style.removeProperty('border-color');
+    }
+  });
+
+  // In-panel buttons (auto retaliate, etc)
+  document.querySelectorAll('.unlockable button:not(.panel-clone-btn):not(.panel-customize button), .clone-panel button:not(.panel-clone-btn)').forEach(el => {
+    if (glassMode) {
+      el.style.setProperty('background', 'rgba(255,255,255,0.1)', 'important');
+      el.style.setProperty('border-color', 'rgba(255,255,255,0.15)', 'important');
+    } else {
+      el.style.removeProperty('background');
+      el.style.removeProperty('border-color');
+    }
+  });
+
+  // Toolbar buttons
+  document.querySelectorAll('#toolbar button, #toolbar .current-color').forEach(el => {
+    if (glassMode) {
+      el.style.setProperty('background', 'rgba(255,255,255,0.08)', 'important');
+      el.style.setProperty('border-color', 'rgba(255,255,255,0.1)', 'important');
+    } else {
+      el.style.removeProperty('background');
+      el.style.removeProperty('border-color');
+    }
+  });
+
+  // Inv slots
+  document.querySelectorAll('.inv-slot').forEach(el => {
+    if (glassMode) {
+      el.style.setProperty('background', 'rgba(255,255,255,0.05)', 'important');
+      el.style.setProperty('border-color', 'rgba(255,255,255,0.1)', 'important');
+    } else {
+      el.style.removeProperty('background');
+      el.style.removeProperty('border-color');
+    }
+  });
+
+  // Stone column borders on tab content
+  document.querySelectorAll('#tab-content, .popout-body').forEach(el => {
+    if (glassMode) {
+      el.style.setProperty('border-left-color', 'transparent', 'important');
+      el.style.setProperty('border-right-color', 'transparent', 'important');
+    } else {
+      el.style.removeProperty('border-left-color');
+      el.style.removeProperty('border-right-color');
+    }
+  });
+
+  // Handle bars
+  document.querySelectorAll('.unlock-handle').forEach(el => {
+    if (glassMode) {
+      const panel = el.closest('.unlockable') || el.closest('.clone-panel');
+      const savedLabel = panelCustomize[panel?.id]?.labelColor;
+      const handleBg = savedLabel ? hexToGlass(savedLabel, 0.4) : 'rgba(255,255,255,0.1)';
+      el.style.setProperty('background', handleBg, 'important');
+    } else {
+      // Restore label color if saved
+      const panel = el.closest('.unlockable') || el.closest('.clone-panel');
+      const id = panel?.id;
+      const saved = panelCustomize[id]?.labelColor;
+      if (saved) el.style.background = saved;
+      else el.style.removeProperty('background');
+    }
+  });
+
+  // Drag handles (chat resize bar, etc)
+  document.querySelectorAll('.drag-handle').forEach(el => {
+    if (glassMode) {
+      const panel = el.closest('.unlockable') || el.closest('.clone-panel');
+      const saved = panelCustomize[panel?.id]?.bgColor || anyBg;
+      const bg = saved ? hexToGlass(saved, 0.3) : 'rgba(255,255,255,0.08)';
+      el.style.setProperty('background', bg, 'important');
+    } else {
+      el.style.removeProperty('background');
+    }
+  });
+}
+
+function toggleGlass() {
+  glassMode = !glassMode;
+  document.body.classList.toggle('glass-mode', glassMode);
+  localStorage.setItem('miniscape-glass', glassMode ? '1' : '0');
+  applyGlassToAll();
+  const btn = document.getElementById('btn-glass');
+  btn.textContent = glassMode ? '◆ Solid' : '◇ Glass';
+}
+{ const btn = document.getElementById('btn-glass'); if (btn && glassMode) btn.textContent = '◆ Solid'; }
+// Apply glass on load if saved
+if (glassMode) setTimeout(applyGlassToAll, 100);
+
+let allLabelsOn = localStorage.getItem('miniscape-all-labels') === '1';
+
+function toggleAllLabels() {
+  allLabelsOn = !allLabelsOn;
+  document.querySelectorAll('.unlockable').forEach(el => {
+    const id = el.id;
+    if (!id) return;
+    if (!panelCustomize[id]) panelCustomize[id] = {};
+    if (allLabelsOn) {
+      el.classList.add('panel-label-on');
+      panelCustomize[id].labelOn = true;
+    } else {
+      el.classList.remove('panel-label-on');
+      delete panelCustomize[id].labelOn;
+    }
+  });
+  if (typeof clonedPanels !== 'undefined') clonedPanels.forEach(c => {
+    if (allLabelsOn) c.el.classList.add('panel-label-on');
+    else c.el.classList.remove('panel-label-on');
+  });
+  savePanelCustomize();
+  localStorage.setItem('miniscape-all-labels', allLabelsOn ? '1' : '0');
+  const btn = document.getElementById('btn-all-labels');
+  btn.textContent = allLabelsOn ? 'T Labels Off' : 'T All Labels';
+}
+{ const btn = document.getElementById('btn-all-labels'); if (btn && allLabelsOn) btn.textContent = 'T Labels Off'; }
+
+// ── Universal Font Size ──────────────────────────────────────────────────────
+let universalFontSize = parseInt(localStorage.getItem('miniscape-universal-font') || '14', 10);
+
+function applyUniversalFont() {
+  const size = universalFontSize + 'px';
+  // All panels, clones, popouts
+  document.querySelectorAll('.unlockable, .clone-panel, .popout-panel').forEach(el => {
+    el.style.fontSize = size;
+  });
+  // Taskbar
+  const tb = document.getElementById('taskbar');
+  if (tb) tb.style.fontSize = Math.max(10, universalFontSize - 2) + 'px';
+  // Chat input
+  const ci = document.getElementById('chat-input');
+  if (ci) ci.style.fontSize = size;
+  // Update display
+  const val = document.getElementById('universal-font-val');
+  if (val) val.textContent = universalFontSize;
+}
+
+function changeUniversalFont(delta) {
+  universalFontSize = Math.max(8, Math.min(28, universalFontSize + delta));
+  localStorage.setItem('miniscape-universal-font', universalFontSize);
+  applyUniversalFont();
+}
+
+// Apply saved font size on load
+{ const val = document.getElementById('universal-font-val'); if (val) val.textContent = universalFontSize; }
+if (universalFontSize !== 14) setTimeout(applyUniversalFont, 100);
+
 function resetUIAndReload() {
   resetUILayout();
+  // Reset universal font
+  localStorage.removeItem('miniscape-universal-font');
+  universalFontSize = 14;
+  // Reset all style settings
+  localStorage.removeItem('miniscape-corner-mode');
+  localStorage.removeItem('miniscape-edge-mode');
+  localStorage.removeItem('miniscape-inner-edges');
+  localStorage.removeItem('miniscape-weight-mode');
+  localStorage.removeItem('miniscape-style-mode');
+  localStorage.removeItem('miniscape-depth-mode');
+  localStorage.removeItem('miniscape-glow-mode');
+  localStorage.removeItem('miniscape-tex-mode');
+  localStorage.removeItem('miniscape-logo-mode');
+  localStorage.removeItem('miniscape-stickers');
+  cornerMode = 'round'; edgeMode = 'flat'; innerEdges = false;
+  weightMode = 'default'; styleMode = 'solid'; depthMode = 'default';
+  glowMode = 'none'; texMode = 'none'; logoMode = 'none';
+  applyCornerMode(); applyEdgeMode(); applyInnerEdges();
+  applyWeight(); applyStyleMode(); applyDepth(); applyGlow(); applyTexture(); applyLogo();
+  // Remove all stickers
+  stickers.forEach(s => { if (s.el) s.el.remove(); });
+  stickers.length = 0;
   // Clear panel customizations
   localStorage.removeItem('miniscape-panel-custom');
   if (typeof panelCustomize !== 'undefined') {
@@ -1006,6 +2001,11 @@ function resetUIAndReload() {
 function toggleUIUnlock() {
   uiUnlocked = !uiUnlocked;
   document.body.classList.toggle('ui-unlocked', uiUnlocked);
+  // Close sticker picker when locking
+  if (!uiUnlocked) {
+    const sp = document.getElementById('sticker-picker');
+    if (sp) sp.classList.remove('open');
+  }
   if (uiUnlocked) {
     showChat('UI UNLOCKED — drag to move, corners to resize, U to lock', '#ff981f');
     // Convert anchored panels to absolute positioning for dragging
@@ -1041,13 +2041,96 @@ function toggleUIUnlock() {
 function clampPanel(el) {
   const rect = el.getBoundingClientRect();
   const vw = window.innerWidth, vh = window.innerHeight;
-  // Ensure at least 40px of the handle bar stays on screen
-  const minVisible = 40;
   let x = rect.left, y = rect.top;
-  x = Math.max(-rect.width + minVisible, Math.min(vw - minVisible, x));
-  y = Math.max(0, Math.min(vh - 24, y)); // always keep handle bar reachable
+  const w = rect.width, h = rect.height;
+  // Keep fully within screen
+  x = Math.max(0, Math.min(vw - w, x));
+  y = Math.max(0, Math.min(vh - h, y));
   el.style.left = x + 'px';
   el.style.top = y + 'px';
+}
+
+function getOtherPanelRects(excludeEl) {
+  const panels = [];
+  document.querySelectorAll('.unlockable').forEach(p => {
+    if (p === excludeEl || p.style.display === 'none' || !p.offsetParent) return;
+    panels.push(p.getBoundingClientRect());
+  });
+  if (typeof clonedPanels !== 'undefined') clonedPanels.forEach(c => {
+    if (c.el === excludeEl || c.el.style.display === 'none') return;
+    panels.push(c.el.getBoundingClientRect());
+  });
+  return panels;
+}
+
+function constrainMove(el, newX, newY, w, h) {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  // Clamp to screen
+  newX = Math.max(0, Math.min(vw - w, newX));
+  newY = Math.max(0, Math.min(vh - h, newY));
+  const others = getOtherPanelRects(el);
+  // Resolve collisions by sliding along edges
+  for (let pass = 0; pass < 3; pass++) {
+    for (const o of others) {
+      const r = { left: newX, top: newY, right: newX + w, bottom: newY + h };
+      // Check overlap
+      if (r.left >= o.right || r.right <= o.left || r.top >= o.bottom || r.bottom <= o.top) continue;
+      // Calculate push distances for each direction
+      const pushLeft = o.left - w;   // place our right edge at their left
+      const pushRight = o.right;      // place our left edge at their right
+      const pushUp = o.top - h;       // place our bottom edge at their top
+      const pushDown = o.bottom;      // place our top edge at their bottom
+      // Pick the smallest displacement from current position
+      const dists = [
+        { axis: 'x', val: pushLeft, dist: Math.abs(newX - pushLeft) },
+        { axis: 'x', val: pushRight, dist: Math.abs(newX - pushRight) },
+        { axis: 'y', val: pushUp, dist: Math.abs(newY - pushUp) },
+        { axis: 'y', val: pushDown, dist: Math.abs(newY - pushDown) },
+      ];
+      dists.sort((a, b) => a.dist - b.dist);
+      for (const d of dists) {
+        if (d.axis === 'x') {
+          const clamped = Math.max(0, Math.min(vw - w, d.val));
+          // Verify this doesn't push us off screen entirely
+          if (clamped === d.val || Math.abs(clamped - d.val) < 2) { newX = clamped; break; }
+        } else {
+          const clamped = Math.max(0, Math.min(vh - h, d.val));
+          if (clamped === d.val || Math.abs(clamped - d.val) < 2) { newY = clamped; break; }
+        }
+      }
+    }
+  }
+  // Final screen clamp
+  newX = Math.max(0, Math.min(vw - w, newX));
+  newY = Math.max(0, Math.min(vh - h, newY));
+  return { x: newX, y: newY };
+}
+
+function constrainResize(el, newW, newH) {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const rect = el.getBoundingClientRect();
+  // Clamp to screen edge
+  newW = Math.min(newW, vw - rect.left);
+  newH = Math.min(newH, vh - rect.top);
+  // Clamp to nearest panel edge
+  const others = getOtherPanelRects(el);
+  for (const o of others) {
+    const r = { left: rect.left, top: rect.top, right: rect.left + newW, bottom: rect.top + newH };
+    if (r.left >= o.right || r.right <= o.left || r.top >= o.bottom || r.bottom <= o.top) continue;
+    // Shrink whichever dimension intrudes less
+    if (o.left > rect.left && o.top > rect.top) {
+      // Panel is to our bottom-right — shrink the axis with less intrusion
+      const xIntrude = r.right - o.left;
+      const yIntrude = r.bottom - o.top;
+      if (xIntrude < yIntrude) newW = o.left - rect.left;
+      else newH = o.top - rect.top;
+    } else if (o.left > rect.left) {
+      newW = o.left - rect.left;
+    } else if (o.top > rect.top) {
+      newH = o.top - rect.top;
+    }
+  }
+  return { w: newW, h: newH };
 }
 
 function initUIUnlock() {
@@ -1104,6 +2187,7 @@ function initUIUnlock() {
 
   window.addEventListener('mousemove', (e) => {
     if (uiDrag.active && uiDrag.el) {
+      if (!uiUnlocked && uiDrag.el.id !== 'panel-dialogue') { uiDrag.active = false; return; }
       const dx = e.clientX - uiDrag.startX;
       const dy = e.clientY - uiDrag.startY;
       let newX = uiDrag.elX + dx;
@@ -1116,14 +2200,18 @@ function initUIUnlock() {
         newX = s.x; newY = s.y;
       }
 
+      // Prevent overlap and keep on screen
+      const resolved = constrainMove(uiDrag.el, newX, newY, w, h);
+      newX = resolved.x; newY = resolved.y;
+
       uiDrag.el.style.left = newX + 'px';
       uiDrag.el.style.top = newY + 'px';
       uiDrag.el.style.right = 'auto';
       uiDrag.el.style.bottom = 'auto';
       uiDrag.el.style.transform = 'none';
-      clampPanel(uiDrag.el);
     }
     if (uiResize.active && uiResize.el) {
+      if (!uiUnlocked && uiResize.el.id !== 'panel-dialogue') { uiResize.active = false; return; }
       let newW = uiResize.startW + (e.clientX - uiResize.startX);
       let newH = uiResize.startH + (e.clientY - uiResize.startY);
 
@@ -1142,13 +2230,14 @@ function initUIUnlock() {
         }
       }
 
-      uiResize.el.style.width = Math.max(100, newW) + 'px';
-      uiResize.el.style.height = Math.max(60, newH) + 'px';
+      // Prevent resize from overlapping or going off screen
+      const clamped = constrainResize(uiResize.el, Math.max(100, newW), Math.max(60, newH));
+      uiResize.el.style.width = Math.max(100, clamped.w) + 'px';
+      uiResize.el.style.height = Math.max(60, clamped.h) + 'px';
     }
   });
 
   window.addEventListener('mouseup', () => {
-    if (uiDrag.active && uiDrag.el) clampPanel(uiDrag.el);
     uiDrag.active = false;
     uiResize.active = false;
   });
@@ -1306,7 +2395,16 @@ function updateMinimapCanvas(mc) {
   }
 }
 function updateMinimap() {
-  updateMinimapCanvas(document.getElementById('minimap-canvas'));
+  const mc = document.getElementById('minimap-canvas');
+  if (mc) {
+    const panel = document.getElementById('panel-minimap');
+    const cw = panel.clientWidth, ch = panel.clientHeight;
+    const sz = Math.max(32, Math.min(cw, ch));
+    if (mc.width !== sz || mc.height !== sz) {
+      mc.width = sz; mc.height = sz;
+    }
+    updateMinimapCanvas(mc);
+  }
 }
 
 // ── Action Progress (RS3-style) ─────────────────────────────────────
@@ -1670,6 +2768,7 @@ function handleServerMsg(msg) {
       document.getElementById('panel-minimap').style.display = 'block';
       document.getElementById('toolbar').style.display = 'flex';
       initPanelSystem();
+      if (glassMode) applyGlassToAll();
       showChat('Welcome to MiniScape!', '#0000cc');
       showChat('Click to move. Click NPCs to attack.', '#0000cc');
       showChat('Click trees to chop, rocks to mine.', '#0000cc');
@@ -1794,6 +2893,7 @@ logEl.addEventListener('contextmenu', (e) => {
 });
 
 function showChat(msg, color = '#000') {
+  color = smartColor(color.length === 4 ? '#' + color[1]+color[1]+color[2]+color[2]+color[3]+color[3] : color, 'panel-chat');
   const div = document.createElement('div');
   div.className = 'msg'; div.style.color = color; div.textContent = msg;
   logEl.appendChild(div);
@@ -1837,29 +2937,30 @@ function updateStatsUI() {
   const hpPct = myStats.hp / myStats.maxHp;
   const statsEl = document.getElementById('stats');
   // OSRS-style 3-column skill display
-  let html = `<div class="stat">HP: <span style="color:${hpPct < 0.3 ? '#f44' : '#0f0'}">${myStats.hp}/${myStats.maxHp}</span></div>`;
+  const _sc = (c) => smartColor(c, 'panel-sidebar');
+  let html = `<div class="stat">HP: <span style="color:${_sc(hpPct < 0.3 ? '#ff4444' : '#00ff00')}">${myStats.hp}/${myStats.maxHp}</span></div>`;
   html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;margin-top:4px">';
   for (const k of ALL_SKILLS) {
     const sk = s[k];
     if (!sk) { html += '<div></div>'; continue; }
     const name = k.slice(0, 4).charAt(0).toUpperCase() + k.slice(1, 4);
-    html += `<div class="stat" style="font-size:10px" title="${k}: ${sk.xp} xp">${name} <span>${sk.level}</span></div>`;
+    html += `<div class="stat" style="font-size:10px" title="${k}: ${sk.xp} xp">${name} <span style="color:${_sc('#00ff00')}">${sk.level}</span></div>`;
   }
   html += '</div>';
-  html += `<div class="stat" style="color:#888;margin-top:4px;font-size:10px">Online: ${otherPlayers.length + 1} · (${myX}, ${myY})</div>`;
+  html += `<div class="stat" style="color:${_sc('#888888')};margin-top:4px;font-size:10px">Online: ${otherPlayers.length + 1} · (${myX}, ${myY})</div>`;
   statsEl.innerHTML = html;
 
   // Equipment tab
   const equipEl = document.getElementById('tab-equip');
   if (equipEl && myEquip) {
-    let ehtml = '<h3>Equipment</h3>';
+    let ehtml = `<h3 style="color:${_sc('#ffff00')}">Equipment</h3>`;
     const slots = ['head','cape','neck','weapon','body','shield','legs','hands','feet','ring','ammo'];
     for (const sl of slots) {
       const item = myEquip[sl];
-      ehtml += `<div class="stat" style="font-size:10px">${sl}: <span>${item ? item.name : '---'}</span></div>`;
+      ehtml += `<div class="stat" style="font-size:10px">${sl}: <span style="color:${_sc('#00ff00')}">${item ? item.name : '---'}</span></div>`;
     }
     if (myBonuses) {
-      ehtml += '<div style="margin-top:6px;font-size:10px;color:#aaa">';
+      ehtml += `<div style="margin-top:6px;font-size:10px;color:${_sc('#aaaaaa')}">`;
       ehtml += `Atk: ${myBonuses.aslash||0} Str: ${myBonuses.str||0} Def: ${myBonuses.dslash||0}`;
       ehtml += '</div>';
     }
@@ -1870,8 +2971,8 @@ function updateStatsUI() {
   let invHtml = '<div class="inv-grid">';
   for (let i = 0; i < 28; i++) {
     const item = myStats.inv[i];
-    if (item) invHtml += `<div class="inv-slot filled">${item.name}${item.count > 1 ? '<br>x' + item.count : ''}</div>`;
-    else invHtml += '<div class="inv-slot"></div>';
+    if (item) invHtml += `<div class="inv-slot filled" style="color:${_sc('#ff981f')}">${item.name}${item.count > 1 ? '<br>x' + item.count : ''}</div>`;
+    else invHtml += `<div class="inv-slot" style="color:${_sc('#cccccc')}"></div>`;
   }
   invHtml += '</div>';
   invEl.innerHTML = invHtml;
@@ -1937,6 +3038,10 @@ function toggleMinimize(panelId) {
     state.el.style.display = 'none';
     state.btn.classList.remove('active');
     state.btn.classList.add('minimized');
+    // Deactivate any functionality tied to this panel
+    if (state.el.id === 'toolbar' && typeof paintTool !== 'undefined' && paintTool) {
+      paintTool = null; updatePaintUI();
+    }
   } else {
     // Restore — figure out the right display value
     const tag = state.el.id;
@@ -2075,11 +3180,13 @@ function clonePanel(sourceEl) {
   // Clone inner content based on type
   if (type === 'minimap') {
     const frame = document.createElement('div');
-    frame.id = 'minimap-frame';
-    frame.innerHTML = '<canvas class="clone-minimap-canvas" width="152" height="152"></canvas><div id="minimap-compass">N</div>';
+    frame.className = 'clone-minimap-frame';
+    frame.style.cssText = 'width:100%;height:100%;background:#1a1510;display:flex;align-items:center;justify-content:center;position:relative;';
+    frame.innerHTML = '<canvas class="clone-minimap-canvas" style="width:100%;height:100%;border:2px solid #2a2018;image-rendering:pixelated;"></canvas><div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);color:#c00;font-size:11px;font-weight:bold;z-index:2;text-shadow:0 0 2px #000,0 0 2px #000;">N</div>';
     clone.appendChild(frame);
     clone.style.width = '205px';
-    clone.style.height = '';
+    clone.style.height = '205px';
+    clone.style.overflow = 'hidden';
   } else if (type === 'chat') {
     const log = document.createElement('div');
     log.className = 'clone-chat-log';
@@ -2148,6 +3255,9 @@ function clonePanel(sourceEl) {
 
   document.body.appendChild(clone);
   clonedPanels.push({ id, type, el: clone });
+
+  // Apply universal font size to clone
+  if (universalFontSize !== 14) clone.style.fontSize = universalFontSize + 'px';
 
   // Wire up drag on handle
   handle.addEventListener('mousedown', (e) => {
@@ -2222,7 +3332,14 @@ function updateClonedPanels() {
   for (const c of clonedPanels) {
     if (c.type === 'minimap') {
       const canvas = c.el.querySelector('.clone-minimap-canvas');
-      if (canvas) updateMinimapCanvas(canvas);
+      if (canvas) {
+        const cw = c.el.clientWidth, ch = c.el.clientHeight;
+        const sz = Math.max(32, Math.min(cw, ch));
+        if (canvas.width !== sz || canvas.height !== sz) {
+          canvas.width = sz; canvas.height = sz;
+        }
+        updateMinimapCanvas(canvas);
+      }
     } else if (c.type === 'chat') {
       const log = c.el.querySelector('.clone-chat-log');
       const origLog = document.getElementById('log');
@@ -2274,16 +3391,56 @@ function savePanelCustomize() {
   try { localStorage.setItem('miniscape-panel-custom', JSON.stringify(panelCustomize)); } catch(e) {}
 }
 
+function hexToLuminance(hex) {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const srgb = [r, g, b].map(c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  return 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
+}
+
+function autoContrastText(hex) {
+  return hexToLuminance(hex) > 0.35 ? '#000000' : '#ffffff';
+}
+
+function smartColor(origColor, panelId) {
+  const bg = panelCustomize[panelId]?.bgColor;
+  if (!bg) return origColor;
+  try {
+    const hex6 = origColor.length === 4 ? '#' + origColor[1]+origColor[1]+origColor[2]+origColor[2]+origColor[3]+origColor[3] : origColor;
+    const bgLum = hexToLuminance(bg);
+    const lum = hexToLuminance(hex6);
+    const contrast = (Math.max(bgLum, lum) + 0.05) / (Math.min(bgLum, lum) + 0.05);
+    if (contrast < 2.5) return autoContrastText(bg);
+    return origColor;
+  } catch(e) { return origColor; }
+}
+
+function applyHandleTheme(handle, bgColor) {
+  const textColor = autoContrastText(bgColor);
+  handle.style.background = bgColor;
+  handle.style.color = textColor;
+  // Force all children (buttons, grip, label) to match
+  handle.querySelectorAll('*').forEach(child => {
+    if (child.tagName === 'INPUT') return; // skip color pickers
+    child.style.color = textColor;
+  });
+}
+
 function applyPanelCustomize(el) {
   const id = el.id;
   if (!id || !panelCustomize[id]) return;
   const c = panelCustomize[id];
-  if (c.textColor) el.style.color = c.textColor;
-  if (c.bgColor) el.style.setProperty('background', c.bgColor, 'important');
+  if (c.bgColor) {
+    const textColor = c.textColor || autoContrastText(c.bgColor);
+    applyBgToPanel(el, c.bgColor, textColor);
+  } else if (c.textColor) {
+    el.style.color = c.textColor;
+  }
   if (c.labelOn) el.classList.add('panel-label-on');
   if (c.labelColor) {
     const h = el.querySelector('.unlock-handle');
-    if (h) h.style.background = c.labelColor;
+    if (h) applyHandleTheme(h, c.labelColor);
   }
   if (c.name) {
     const nameSpan = el.querySelector('.unlock-handle > span:first-child');
@@ -2323,7 +3480,10 @@ function injectPanelCustomize(el) {
     e.stopPropagation();
     if (!panelCustomize[id]) panelCustomize[id] = {};
     panelCustomize[id].bgColor = e.target.value;
-    el.style.setProperty('background', e.target.value, 'important');
+    const autoText = autoContrastText(e.target.value);
+    panelCustomize[id].textColor = autoText;
+    applyBgToPanel(el, e.target.value, autoText);
+    txtColor.value = autoText;
     savePanelCustomize();
   });
   bgColor.addEventListener('mousedown', (e) => e.stopPropagation());
@@ -2352,7 +3512,7 @@ function injectPanelCustomize(el) {
     e.stopPropagation();
     if (!panelCustomize[id]) panelCustomize[id] = {};
     panelCustomize[id].labelColor = e.target.value;
-    handle.style.background = e.target.value;
+    applyHandleTheme(handle, e.target.value);
     savePanelCustomize();
   });
   lblColor.addEventListener('mousedown', (e) => e.stopPropagation());
@@ -2395,6 +3555,144 @@ function injectPanelCustomize(el) {
 
 // Inject into all existing panels
 document.querySelectorAll('.unlockable').forEach(injectPanelCustomize);
+
+// ── Universal Color Pickers ──────────────────────────────────────────────────
+function applyBgToPanel(el, color, textColor) {
+  el.style.setProperty('background', color, 'important');
+  el.style.color = textColor;
+  // Chat log + messages
+  const log = el.querySelector('#log');
+  if (log) {
+    log.style.setProperty('background', color, 'important');
+    log.style.color = textColor;
+    log.querySelectorAll('.msg').forEach(m => { m.style.color = textColor; });
+  }
+  // Chat tabs
+  const chatTabs = el.querySelector('#chat-tabs');
+  if (chatTabs) {
+    chatTabs.style.setProperty('background', color, 'important');
+    el.querySelectorAll('.chat-tab:not(.report)').forEach(t => {
+      t.style.color = textColor;
+      t.querySelectorAll('small').forEach(s => { s.style.color = ''; }); // let it inherit
+    });
+  }
+  // Chat input
+  const chatInput = el.querySelector('#chat-input');
+  if (chatInput) {
+    chatInput.style.setProperty('background', color, 'important');
+    chatInput.style.color = textColor;
+  }
+  // Dialogue
+  const dlgLines = el.querySelector('#dlg-lines');
+  if (dlgLines) dlgLines.style.color = textColor;
+  // Sidebar tab icons row + individual tab icons + tab content + stone columns
+  el.querySelectorAll('#tab-icons, .clone-tab-icons').forEach(ti => {
+    ti.style.setProperty('background', color, 'important');
+    ti.style.borderColor = textColor === '#000000' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)';
+  });
+  el.querySelectorAll('.tab-icon').forEach(ti => {
+    ti.style.setProperty('background', color, 'important');
+    ti.style.color = textColor;
+  });
+  const tabContent = el.querySelector('#tab-content') || el.querySelector('.clone-tab-content');
+  if (tabContent) {
+    tabContent.style.setProperty('background', color, 'important');
+    tabContent.style.borderLeftColor = color;
+    tabContent.style.borderRightColor = color;
+    tabContent.style.color = textColor;
+    // Smart contrast for tab pane headings and stat values
+    const bgLum = hexToLuminance(color);
+    const smartColor = (origColor) => {
+      const hex6 = origColor.length === 4 ? '#' + origColor[1]+origColor[1]+origColor[2]+origColor[2]+origColor[3]+origColor[3] : origColor;
+      try {
+        const lum = hexToLuminance(hex6);
+        const contrast = (Math.max(bgLum, lum) + 0.05) / (Math.min(bgLum, lum) + 0.05);
+        return contrast < 2.5 ? textColor : origColor;
+      } catch(e) { return origColor; }
+    };
+    // h3 headings (Combat, Skills, etc)
+    tabContent.querySelectorAll('h3').forEach(h => {
+      h.style.color = smartColor('#ffff00');
+    });
+    // Stat value spans
+    tabContent.querySelectorAll('.stat span').forEach(s => {
+      s.style.color = smartColor('#00ff00');
+    });
+    // Items
+    tabContent.querySelectorAll('.item').forEach(i => {
+      i.style.color = smartColor('#cccccc');
+    });
+    // Inv slots
+    tabContent.querySelectorAll('.inv-slot').forEach(s => {
+      s.style.color = smartColor('#cccccc');
+    });
+  }
+}
+
+function applyUniversalBg(color) {
+  const textColor = autoContrastText(color);
+  document.querySelectorAll('.unlockable').forEach(el => {
+    const id = el.id;
+    if (!id) return;
+    if (!panelCustomize[id]) panelCustomize[id] = {};
+    panelCustomize[id].bgColor = color;
+    panelCustomize[id].textColor = textColor;
+    applyBgToPanel(el, color, textColor);
+    const txtPicker = el.querySelector('.panel-customize input[type="color"][title="Text color"]');
+    if (txtPicker) txtPicker.value = textColor;
+    const bgPicker = el.querySelector('.panel-customize input[type="color"][title="Background color"]');
+    if (bgPicker) bgPicker.value = color;
+  });
+  if (typeof clonedPanels !== 'undefined') clonedPanels.forEach(c => {
+    applyBgToPanel(c.el, color, textColor);
+  });
+  savePanelCustomize();
+  if (glassMode) applyGlassToAll();
+}
+
+function applyUniversalLabel(color) {
+  document.querySelectorAll('.unlockable').forEach(el => {
+    const id = el.id;
+    if (!id) return;
+    if (!panelCustomize[id]) panelCustomize[id] = {};
+    panelCustomize[id].labelColor = color;
+    const h = el.querySelector('.unlock-handle');
+    if (h) applyHandleTheme(h, color);
+    const lblPicker = el.querySelector('.panel-customize input[type="color"].panel-label-color');
+    if (lblPicker) lblPicker.value = color;
+  });
+  if (typeof clonedPanels !== 'undefined') clonedPanels.forEach(c => {
+    const h = c.el.querySelector('.unlock-handle');
+    if (h) applyHandleTheme(h, color);
+  });
+  savePanelCustomize();
+  if (glassMode) applyGlassToAll();
+}
+
+{ // Universal BG
+  const el = document.getElementById('universal-bg');
+  let warned = false, origColor = el.value;
+  el.addEventListener('click', () => { warned = false; origColor = el.value; });
+  el.addEventListener('input', (e) => {
+    if (!warned) {
+      warned = true;
+      showChat('⚠ Applying to ALL panels — individual panels can still be customized after', '#d4981f');
+    }
+    applyUniversalBg(e.target.value);
+  });
+}
+{ // Universal Label
+  const el = document.getElementById('universal-label');
+  let warned = false, origColor = el.value;
+  el.addEventListener('click', () => { warned = false; origColor = el.value; });
+  el.addEventListener('input', (e) => {
+    if (!warned) {
+      warned = true;
+      showChat('⚠ Applying to ALL label bars — individual panels can still be customized after', '#d4981f');
+    }
+    applyUniversalLabel(e.target.value);
+  });
+}
 
 // ── Tab Pop-out System ────────────────────────────────────────────────────────
 const TAB_NAMES = { combat: 'Combat', stats: 'Skills', quest: 'Quests', inv: 'Inventory', equip: 'Equipment', prayer: 'Prayer', magic: 'Magic' };
@@ -3665,11 +4963,15 @@ function render() {
     const hintText = '\u25B6 ' + tutorialHint;
     const hw = ctx.measureText(hintText).width + 20;
     const hx = (canvas.width - hw) / 2;
+    const r = squareCorners ? 0 : 8;
+    ctx.beginPath();
+    if (r > 0 && ctx.roundRect) ctx.roundRect(hx, 4, hw, 24, r);
+    else ctx.rect(hx, 4, hw, 24);
     ctx.fillStyle = 'rgba(0,40,80,0.85)';
-    ctx.fillRect(hx, 4, hw, 24);
+    ctx.fill();
     ctx.strokeStyle = '#0ff';
     ctx.lineWidth = 1;
-    ctx.strokeRect(hx, 4, hw, 24);
+    ctx.stroke();
     ctx.fillStyle = '#0ff';
     ctx.fillText(hintText, hx + 10, 21);
   }
