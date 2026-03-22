@@ -14,6 +14,12 @@ const CHUNKS_DIR = path.join(DATA_DIR, 'chunks');
 const TILE_DATA_DIR = path.join(DATA_DIR, 'tile-data');
 const NAMES_FILE = path.join(DATA_DIR, 'names.json');
 const FRIENDS_FILE = path.join(DATA_DIR, 'friends.json');
+const WALLS_FILE = path.join(DATA_DIR, 'walls.json');
+const DOORS_FILE = path.join(DATA_DIR, 'doors.json');
+const HEIGHTS_FILE = path.join(DATA_DIR, 'heights.json');
+const POSITIONS_FILE = path.join(DATA_DIR, 'positions.json');
+const VARIANTS_FILE = path.join(DATA_DIR, 'variants.json');
+const playerPositions = new Map(); // name → {x, y, layer}
 const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1480654483095552123/AsoMuMPfGyKNYma5hh-kYnIaNLm4sLF8Ui3rVewiZf37anEXyw5qU_7I8E8gQkDcDm1E';
 const DISCORD_BOT_USER_ID = '1464768627709313044';
 const BOT_PLAYER_ID = 0; // Reserved ID for Discord bot "AI"
@@ -21,7 +27,7 @@ const BOT_PLAYER_ID = 0; // Reserved ID for Discord bot "AI"
 const CHUNK_SIZE = 64;
 const VIEW_DIST = 3;
 const ENTITY_VIEW = (VIEW_DIST + 1) * CHUNK_SIZE;
-const SPAWN_X = 3222, SPAWN_Y = 3218;
+const SPAWN_X = 100, SPAWN_Y = 100;
 
 // ── Tick Queue System (OSRS-authentic action scheduling) ─────────────────────
 // Actions are scheduled for a future tick and run in priority order:
@@ -129,18 +135,6 @@ function loadTerrainChunk(cx, cy) {
   } catch (e) { terrainCache.set(key, null); return null; }
 }
 
-function isOsrsBlocked(x, y) {
-  const cx = Math.floor(x / 64), cy = Math.floor(y / 64);
-  const key = `${cx}_${cy}`;
-  if (!collisionCache.has(key)) {
-    // Force load terrain to populate collision cache
-    loadTerrainChunk(cx, cy);
-  }
-  const flags = collisionCache.get(key);
-  if (!flags) return false; // No data = assume walkable
-  const lx = ((x % 64) + 64) % 64, ly = ((y % 64) + 64) % 64;
-  return (flags[ly * 64 + lx] & 1) === 1; // bit 0 = blocked
-}
 
 function loadTerrainHeights(cx, cy) {
   const filePath = path.join(TILE_DATA_DIR, `${cx}_${cy}.json`);
@@ -166,14 +160,15 @@ function localXY(wx, wy) {
   return [((wx % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE, ((wy % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE];
 }
 
-function loadChunkFromDisk(cx, cy) {
-  const tp = path.join(CHUNKS_DIR, `${cx}_${cy}.bin`);
+function loadChunkFromDisk(cx, cy, layer = 0) {
+  const prefix = layer === 0 ? `${cx}_${cy}` : `L${layer}_${cx}_${cy}`;
+  const tp = path.join(CHUNKS_DIR, `${prefix}.bin`);
   if (!fs.existsSync(tp)) return null;
   const buf = fs.readFileSync(tp);
   const tiles = new Uint8Array(CHUNK_SIZE * CHUNK_SIZE);
   tiles.set(new Uint8Array(buf.buffer, buf.byteOffset, Math.min(buf.byteLength, tiles.length)));
   const colors = new Map();
-  const cp = path.join(CHUNKS_DIR, `${cx}_${cy}.json`);
+  const cp = path.join(CHUNKS_DIR, `${prefix}.json`);
   if (fs.existsSync(cp)) {
     const obj = JSON.parse(fs.readFileSync(cp, 'utf8'));
     for (const [k, v] of Object.entries(obj)) colors.set(parseInt(k), v);
@@ -181,10 +176,11 @@ function loadChunkFromDisk(cx, cy) {
   return { tiles, colors, dirty: false, lastAccess: Date.now() };
 }
 
-function saveChunkToDisk(cx, cy, chunk) {
+function saveChunkToDisk(cx, cy, chunk, layer = 0) {
   fs.mkdirSync(CHUNKS_DIR, { recursive: true });
-  fs.writeFileSync(path.join(CHUNKS_DIR, `${cx}_${cy}.bin`), Buffer.from(chunk.tiles));
-  const cp = path.join(CHUNKS_DIR, `${cx}_${cy}.json`);
+  const prefix = layer === 0 ? `${cx}_${cy}` : `L${layer}_${cx}_${cy}`;
+  fs.writeFileSync(path.join(CHUNKS_DIR, `${prefix}.bin`), Buffer.from(chunk.tiles));
+  const cp = path.join(CHUNKS_DIR, `${prefix}.json`);
   if (chunk.colors.size > 0) {
     const obj = {}; for (const [k, v] of chunk.colors) obj[k] = v;
     fs.writeFileSync(cp, JSON.stringify(obj));
@@ -192,49 +188,49 @@ function saveChunkToDisk(cx, cy, chunk) {
   chunk.dirty = false;
 }
 
-function getChunk(cx, cy) {
-  const key = `${cx}_${cy}`;
+function getChunk(cx, cy, layer = 0) {
+  const key = `${layer}_${cx}_${cy}`;
   let chunk = chunks.get(key);
   if (chunk) return chunk;
-  chunk = loadChunkFromDisk(cx, cy);
-  if (!chunk) chunk = { tiles: new Uint8Array(CHUNK_SIZE * CHUNK_SIZE), colors: new Map(), dirty: false, lastAccess: Date.now() };
+  chunk = loadChunkFromDisk(cx, cy, layer);
+  if (!chunk) { const tiles = new Uint8Array(CHUNK_SIZE * CHUNK_SIZE); tiles.fill(T.WATER); chunk = { tiles, colors: new Map(), dirty: false, lastAccess: Date.now() }; }
   chunks.set(key, chunk);
   return chunk;
 }
 
-function tileAt(x, y) {
+function tileAt(x, y, layer = 0) {
   const cx = Math.floor(x / CHUNK_SIZE), cy = Math.floor(y / CHUNK_SIZE);
-  const key = `${cx}_${cy}`;
+  const key = `${layer}_${cx}_${cy}`;
   let chunk = chunks.get(key);
   if (!chunk) {
-    chunk = loadChunkFromDisk(cx, cy);
-    if (!chunk) return T.GRASS;
+    chunk = loadChunkFromDisk(cx, cy, layer);
+    if (!chunk) return T.WATER;
     chunks.set(key, chunk);
   }
   const [lx, ly] = localXY(x, y);
   return chunk.tiles[ly * CHUNK_SIZE + lx];
 }
 
-function setTile(x, y, t) {
+function setTile(x, y, t, layer = 0) {
   const cx = Math.floor(x / CHUNK_SIZE), cy = Math.floor(y / CHUNK_SIZE);
-  const chunk = getChunk(cx, cy);
+  const chunk = getChunk(cx, cy, layer);
   const [lx, ly] = localXY(x, y);
   chunk.tiles[ly * CHUNK_SIZE + lx] = t;
   chunk.dirty = true;
   chunk.lastAccess = Date.now();
 }
 
-function getColor(x, y) {
+function getColor(x, y, layer = 0) {
   const cx = Math.floor(x / CHUNK_SIZE), cy = Math.floor(y / CHUNK_SIZE);
-  const chunk = chunks.get(`${cx}_${cy}`);
+  const chunk = chunks.get(`${layer}_${cx}_${cy}`);
   if (!chunk) return null;
   const [lx, ly] = localXY(x, y);
   return chunk.colors.get(ly * CHUNK_SIZE + lx) || null;
 }
 
-function setColor(x, y, color) {
+function setColor(x, y, color, layer = 0) {
   const cx = Math.floor(x / CHUNK_SIZE), cy = Math.floor(y / CHUNK_SIZE);
-  const chunk = getChunk(cx, cy);
+  const chunk = getChunk(cx, cy, layer);
   const [lx, ly] = localXY(x, y);
   const k = ly * CHUNK_SIZE + lx;
   if (color) chunk.colors.set(k, color);
@@ -248,11 +244,119 @@ function isCardinalAdjacent(x1, y1, x2, y2) {
   return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
 }
 
-function isWalkable(x, y) {
-  const t = tileAt(x, y);
-  if (t === T.WATER || t === T.TREE || t === T.ROCK || t === T.WALL || t === T.BUSH || t === T.DOOR) return false;
-  if (isOsrsBlocked(x, y)) return false;
+// Tile variant storage (server-side)
+global.tileVariantMap = new Map(); // "layer_x_y" → variant number
+
+function saveVariants() {
+  try {
+    const obj = {};
+    for (const [k, v] of global.tileVariantMap) obj[k] = v;
+    fs.writeFileSync(VARIANTS_FILE, JSON.stringify(obj));
+  } catch (e) { console.warn('[variants] Save error:', e.message); }
+}
+
+function loadVariants() {
+  try {
+    if (fs.existsSync(VARIANTS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(VARIANTS_FILE, 'utf8'));
+      for (const [k, v] of Object.entries(data)) global.tileVariantMap.set(k, v);
+      console.log(`[variants] Loaded ${global.tileVariantMap.size} tile variants`);
+    }
+  } catch (e) { console.warn('[variants] Load error:', e.message); }
+}
+
+// Wall/door edge storage (server-side, mirrors client)
+const serverWallEdges = new Map(); // "layer_x_y" → bitmask (N=1, E=2, S=4, W=8, diagNE=16, diagNW=32)
+const serverDoorEdges = new Map();
+const serverOpenDoors = new Map(); // "layer_x_y" → bitmask of which edges are currently open
+const serverTileHeights = new Map(); // "layer_x_y" → height (float)
+const serverRoofs = new Map(); // "layer_id" → roof object
+let serverNextRoofId = 1;
+const ROOFS_FILE = path.join(DATA_DIR, 'roofs.json');
+
+function saveWalls() {
+  try {
+    const walls = {}; for (const [k, v] of serverWallEdges) walls[k] = v;
+    const doors = {}; for (const [k, v] of serverDoorEdges) doors[k] = v;
+    const heights = {}; for (const [k, v] of serverTileHeights) heights[k] = v;
+    fs.writeFileSync(WALLS_FILE, JSON.stringify(walls));
+    fs.writeFileSync(DOORS_FILE, JSON.stringify(doors));
+    fs.writeFileSync(HEIGHTS_FILE, JSON.stringify(heights));
+    const roofs = {}; for (const [k, v] of serverRoofs) roofs[k] = v;
+    fs.writeFileSync(ROOFS_FILE, JSON.stringify(roofs));
+  } catch (e) { console.warn('[walls] Save error:', e.message); }
+}
+
+function loadWalls() {
+  try {
+    if (fs.existsSync(WALLS_FILE)) {
+      const walls = JSON.parse(fs.readFileSync(WALLS_FILE, 'utf8'));
+      for (const [k, v] of Object.entries(walls)) serverWallEdges.set(k, v);
+      console.log(`[walls] Loaded ${serverWallEdges.size} wall edges`);
+    }
+    if (fs.existsSync(DOORS_FILE)) {
+      const doors = JSON.parse(fs.readFileSync(DOORS_FILE, 'utf8'));
+      for (const [k, v] of Object.entries(doors)) serverDoorEdges.set(k, v);
+      console.log(`[walls] Loaded ${serverDoorEdges.size} door edges`);
+    }
+    if (fs.existsSync(HEIGHTS_FILE)) {
+      const heights = JSON.parse(fs.readFileSync(HEIGHTS_FILE, 'utf8'));
+      for (const [k, v] of Object.entries(heights)) serverTileHeights.set(k, parseFloat(v));
+      console.log(`[heights] Loaded ${serverTileHeights.size} tile heights`);
+    }
+    if (fs.existsSync(ROOFS_FILE)) {
+      const roofs = JSON.parse(fs.readFileSync(ROOFS_FILE, 'utf8'));
+      for (const [k, v] of Object.entries(roofs)) { serverRoofs.set(k, v); if (v.id >= serverNextRoofId) serverNextRoofId = v.id + 1; }
+      console.log(`[roofs] Loaded ${serverRoofs.size} roofs`);
+    }
+  } catch (e) { console.warn('[walls] Load error:', e.message); }
+}
+
+// Send wall/door edges for a layer to a player
+function sendEdgesForLayer(ws, layer) {
+  const walls = [], doors = [];
+  for (const [k, v] of serverWallEdges) {
+    const parts = k.split('_');
+    if (parseInt(parts[0]) === layer) walls.push({ x: parseInt(parts[1]), y: parseInt(parts[2]), mask: v });
+  }
+  for (const [k, v] of serverDoorEdges) {
+    const parts = k.split('_');
+    if (parseInt(parts[0]) === layer) doors.push({ x: parseInt(parts[1]), y: parseInt(parts[2]), mask: v });
+  }
+  if (walls.length > 0) send(ws, { t: 'walls_bulk', layer, walls });
+  if (doors.length > 0) send(ws, { t: 'doors_bulk', layer, doors });
+}
+function getServerWallEdge(x, y, layer = 0) { return serverWallEdges.get(`${layer}_${x}_${y}`) || 0; }
+function getServerDoorEdge(x, y, layer = 0) { return serverDoorEdges.get(`${layer}_${x}_${y}`) || 0; }
+
+function isWalkable(x, y, layer = 0) {
+  // Only walls block movement — tile colors are purely visual
+  const we = getServerWallEdge(x, y, layer);
+  if (we & 48) return false; // diagonal walls block the full tile
   return true;
+}
+
+// Check if movement from (fx,fy) to (tx,ty) is blocked by an edge wall
+function isEdgeBlocked(fx, fy, tx, ty, layer = 0) {
+  const dx = tx - fx, dy = ty - fy;
+  // Combine wall + door edges, but exclude open doors from blocking
+  const fromOpen = serverOpenDoors.get(`${layer}_${fx}_${fy}`) || 0;
+  const toOpen = serverOpenDoors.get(`${layer}_${tx}_${ty}`) || 0;
+  const fromEdges = getServerWallEdge(fx, fy, layer) | (getServerDoorEdge(fx, fy, layer) & ~fromOpen);
+  const toEdges = getServerWallEdge(tx, ty, layer) | (getServerDoorEdge(tx, ty, layer) & ~toOpen);
+  // Cardinal movement
+  if (dx === 0 && dy === 1) return !!(fromEdges & 1) || !!(toEdges & 4);   // moving north: from's N wall or to's S wall
+  if (dx === 0 && dy === -1) return !!(fromEdges & 4) || !!(toEdges & 1);   // moving south
+  if (dx === 1 && dy === 0) return !!(fromEdges & 2) || !!(toEdges & 8);   // moving east
+  if (dx === -1 && dy === 0) return !!(fromEdges & 8) || !!(toEdges & 2);  // moving west
+  // Diagonal movement: check both cardinal components
+  if (dx !== 0 && dy !== 0) {
+    if (isEdgeBlocked(fx, fy, fx + dx, fy, layer)) return true;
+    if (isEdgeBlocked(fx, fy, fx, fy + dy, layer)) return true;
+    if (isEdgeBlocked(fx + dx, fy, tx, ty, layer)) return true;
+    if (isEdgeBlocked(fx, fy + dy, tx, ty, layer)) return true;
+  }
+  return false;
 }
 
 function evictChunks() {
@@ -262,14 +366,15 @@ function evictChunks() {
     const cx = Math.floor(p.x / CHUNK_SIZE), cy = Math.floor(p.y / CHUNK_SIZE);
     for (let dx = -(VIEW_DIST + 1); dx <= VIEW_DIST + 1; dx++)
       for (let dy = -(VIEW_DIST + 1); dy <= VIEW_DIST + 1; dy++)
-        keep.add(`${cx + dx}_${cy + dy}`);
+        keep.add(`${p.layer}_${cx + dx}_${cy + dy}`);
   }
   for (const [key, chunk] of chunks) {
     if (keep.has(key)) continue;
     if (now - chunk.lastAccess > 60000) {
       if (chunk.dirty) {
-        const [cx, cy] = key.split('_').map(Number);
-        saveChunkToDisk(cx, cy, chunk);
+        const parts = key.split('_').map(Number);
+        const [layer, cx, cy] = parts;
+        saveChunkToDisk(cx, cy, chunk, layer);
       }
       chunks.delete(key);
     }
@@ -280,8 +385,9 @@ function saveAllChunks() {
   let saved = 0;
   for (const [key, chunk] of chunks) {
     if (!chunk.dirty) continue;
-    const [cx, cy] = key.split('_').map(Number);
-    saveChunkToDisk(cx, cy, chunk);
+    const parts = key.split('_').map(Number);
+    const [layer, cx, cy] = parts;
+    saveChunkToDisk(cx, cy, chunk, layer);
     saved++;
   }
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -306,6 +412,28 @@ const friendsData = new Map(); // id -> Set of friend ids
 const playerNames = new Map(); // id -> display name
 
 // Load friends from disk
+function loadPositions() {
+  try {
+    if (fs.existsSync(POSITIONS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(POSITIONS_FILE, 'utf8'));
+      for (const [name, pos] of Object.entries(data)) playerPositions.set(name, pos);
+      console.log(`[positions] Loaded ${playerPositions.size} saved positions`);
+    }
+  } catch (e) {}
+}
+function savePositions() {
+  try {
+    const data = {};
+    for (const [name, pos] of playerPositions) data[name] = pos;
+    // Also save all currently online players
+    for (const [, p] of players) {
+      const name = playerNames.get(p.id);
+      if (name) data[name] = { x: p.x, y: p.y, layer: p.layer };
+    }
+    fs.writeFileSync(POSITIONS_FILE, JSON.stringify(data));
+  } catch (e) {}
+}
+
 function loadFriends() {
   try {
     if (fs.existsSync(FRIENDS_FILE)) {
@@ -432,43 +560,10 @@ function calcEquipBonuses(equipment) {
   return total;
 }
 
-// ── NPC Spawns (from OSRS data) ─────────────────────────────────────────────
+// ── NPC Spawns ──────────────────────────────────────────────────────────────
 function spawnNpcs() {
-  try {
-    const spawns = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'npc-spawns-osrs.json'), 'utf8'));
-    // Only spawn NPCs near Lumbridge initially (expand later)
-    const lumbridgeSpawns = spawns.filter(s =>
-      s.x >= 3140 && s.x <= 3330 && s.y >= 3140 && s.y <= 3330
-    );
-    let spawned = 0;
-    for (const s of lumbridgeSpawns) {
-      const def = npcDefs.get(s.id);
-      if (!def) continue;
-      if (def.combatLevel < 0 && !def.actions.includes('Attack')) continue; // skip non-combat NPCs for now
-      if (isOsrsBlocked(s.x, s.y)) continue; // don't spawn on blocked tiles
-      // Get stats from cache def
-      const stats = def.stats || [1,1,1,1,1,1]; // [atk, def, str, hp, range, mage]
-      const hp = Math.max(1, stats[3]);
-      npcs.push({
-        id: npcs.length, defId: s.id, name: def.name,
-        x: s.x, y: s.y, spawnX: s.x, spawnY: s.y,
-        hp, maxHp: hp,
-        attack: stats[0], strength: stats[2], defence: stats[1],
-        ranged: stats[4], magic: stats[5],
-        combatLevel: def.combatLevel,
-        aggressive: def.name.includes('Goblin') || def.name.includes('rat') || def.name.includes('spider') || def.name.includes('Dark wizard'),
-        dead: false, respawnTick: 0, wanderTick: Math.floor(Math.random() * 100),
-        nextAttackTick: 0, attackSpeed: 4, // ticks between NPC attacks
-        combatTarget: null, combatTimeout: 0, // NPC remembers who attacked it
-        drops: getDropTable(def),
-        color: '#8b1a1a',
-      });
-      spawned++;
-    }
-    console.log(`[npcs] Spawned ${spawned} NPCs near Lumbridge (from ${lumbridgeSpawns.length} spawn points)`);
-  } catch (e) {
-    console.log('[npcs] No npc-spawns-osrs.json found, no NPCs spawned');
-  }
+  // No OSRS NPC spawns — custom NPCs can be added here in the future
+  console.log('[npcs] No NPC spawn data loaded (OSRS data removed)');
 }
 
 // ── Tutorial Island NPC Spawns ───────────────────────────────────────────────
@@ -728,8 +823,8 @@ function addXp(p, skill, amount) {
 }
 
 // ── Pathfinding (A*) ───────────────────────────────────────────────────────────
-function findPath(sx, sy, tx, ty) {
-  if (!isWalkable(tx, ty)) return [];
+function findPath(sx, sy, tx, ty, layer = 0) {
+  if (!isWalkable(tx, ty, layer)) return [];
   if (sx === tx && sy === ty) return [];
   if (Math.abs(tx - sx) + Math.abs(ty - sy) > 200) return [];
   const key = (x, y) => `${x},${y}`;
@@ -753,8 +848,9 @@ function findPath(sx, sy, tx, ty) {
     closed.add(key(cur.x, cur.y));
     for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0],[-1,-1],[1,-1],[-1,1],[1,1]]) {
       const nx = cur.x + dx, ny = cur.y + dy;
-      if (!isWalkable(nx, ny) || closed.has(key(nx, ny))) continue;
-      if (dx !== 0 && dy !== 0 && (!isWalkable(cur.x + dx, cur.y) || !isWalkable(cur.x, cur.y + dy))) continue;
+      if (!isWalkable(nx, ny, layer) || closed.has(key(nx, ny))) continue;
+      if (isEdgeBlocked(cur.x, cur.y, nx, ny, layer)) continue;
+      if (dx !== 0 && dy !== 0 && (!isWalkable(cur.x + dx, cur.y, layer) || !isWalkable(cur.x, cur.y + dy, layer))) continue;
       const ng = cur.g + (dx !== 0 && dy !== 0 ? 1.41 : 1);
       const k = key(nx, ny);
       if (!gScore.has(k) || ng < gScore.get(k)) {
@@ -887,14 +983,15 @@ function startDiscordPolling() {
   pollDiscordMessages(); // initial poll to get last message ID
   discordPollTimer = setInterval(pollDiscordMessages, POLL_INTERVAL_MS);
 }
-function broadcastTiles(changes) {
+function broadcastTiles(changes, layer = 0) {
   const byChunk = new Map();
   for (const c of changes) {
-    const key = `${Math.floor(c.x / CHUNK_SIZE)}_${Math.floor(c.y / CHUNK_SIZE)}`;
+    const key = `${layer}_${Math.floor(c.x / CHUNK_SIZE)}_${Math.floor(c.y / CHUNK_SIZE)}`;
     if (!byChunk.has(key)) byChunk.set(key, []);
     byChunk.get(key).push(c);
   }
   for (const [ws, p] of players) {
+    if (p.layer !== layer) continue;
     const rel = [];
     for (const [key, cc] of byChunk) if (p.sentChunks.has(key)) rel.push(...cc);
     if (rel.length > 0) send(ws, { t: 'tiles', changes: rel });
@@ -908,14 +1005,7 @@ function sendStats(p) {
   for (const s of EQUIP_SLOTS) {
     if (p.equipment[s] >= 0) equip[s] = { id: p.equipment[s], name: itemName(p.equipment[s]) };
   }
-  // Include tutorial hint if on Tutorial Island
-  let tutorialHint = null;
-  if (!p.tutorialComplete && p.tutorialStep >= 0 && p.tutorialStep < tutorial.STEPS.length) {
-    const step = tutorial.STEPS[p.tutorialStep];
-    if (step.npc) tutorialHint = `Talk to ${step.npc}`;
-    else if (step.message) tutorialHint = step.message;
-  }
-  send(p.ws, { t: 'stats', hp: p.hp, maxHp: p.maxHp, skills: p.skills, inv, equip, bonuses: calcEquipBonuses(p.equipment), tutorialHint });
+  send(p.ws, { t: 'stats', hp: p.hp, maxHp: p.maxHp, skills: p.skills, inv, equip, bonuses: calcEquipBonuses(p.equipment) });
 }
 
 function addItemById(p, id, count = 1) {
@@ -958,47 +1048,47 @@ function dropItem(name, x, y) {
   groundItems.push({ id: nextGroundItemId++, itemId: id, name: id >= 0 ? itemName(id) : name, x, y, count: 1, despawnTick: tick + 167 });
 }
 
-function findCluster(tx, ty) {
-  const t = tileAt(tx, ty);
+function findCluster(tx, ty, layer = 0) {
+  const t = tileAt(tx, ty, layer);
   let x0 = tx, y0 = ty;
-  while (tileAt(x0 - 1, y0) === t) x0--;
-  while (tileAt(x0, y0 - 1) === t) y0--;
+  while (tileAt(x0 - 1, y0, layer) === t) x0--;
+  while (tileAt(x0, y0 - 1, layer) === t) y0--;
   let w = 0, h = 0;
-  while (tileAt(x0 + w, y0) === t) w++;
-  while (tileAt(x0, y0 + h) === t) h++;
+  while (tileAt(x0 + w, y0, layer) === t) w++;
+  while (tileAt(x0, y0 + h, layer) === t) h++;
   return { x: x0, y: y0, w, h };
 }
 
-function walkToClusterBase(cx, cy, cw, ch, px, py) {
+function walkToClusterBase(cx, cy, cw, ch, px, py, layer = 0) {
   const candidates = [];
-  for (let dx = 0; dx < cw; dx++) if (isWalkable(cx + dx, cy + ch)) candidates.push([cx + dx, cy + ch]);
+  for (let dx = 0; dx < cw; dx++) if (isWalkable(cx + dx, cy + ch, layer)) candidates.push([cx + dx, cy + ch]);
   for (let dy = 0; dy < ch; dy++) {
-    if (isWalkable(cx - 1, cy + dy)) candidates.push([cx - 1, cy + dy]);
-    if (isWalkable(cx + cw, cy + dy)) candidates.push([cx + cw, cy + dy]);
+    if (isWalkable(cx - 1, cy + dy, layer)) candidates.push([cx - 1, cy + dy]);
+    if (isWalkable(cx + cw, cy + dy, layer)) candidates.push([cx + cw, cy + dy]);
   }
-  for (let dx = 0; dx < cw; dx++) if (isWalkable(cx + dx, cy - 1)) candidates.push([cx + dx, cy - 1]);
+  for (let dx = 0; dx < cw; dx++) if (isWalkable(cx + dx, cy - 1, layer)) candidates.push([cx + dx, cy - 1]);
   if (candidates.length === 0) return null;
   candidates.sort((a, b) => (Math.abs(a[0] - px) + Math.abs(a[1] - py)) - (Math.abs(b[0] - px) + Math.abs(b[1] - py)));
   return candidates[0];
 }
 
-function walkAdjacentTo(tx, ty, px, py) {
-  const adj = [[tx-1,ty],[tx+1,ty],[tx,ty-1],[tx,ty+1]].filter(([x,y]) => isWalkable(x,y));
+function walkAdjacentTo(tx, ty, px, py, layer = 0) {
+  const adj = [[tx-1,ty],[tx+1,ty],[tx,ty-1],[tx,ty+1]].filter(([x,y]) => isWalkable(x,y, layer));
   if (adj.length === 0) return null;
   adj.sort((a, b) => (Math.abs(a[0] - px) + Math.abs(a[1] - py)) - (Math.abs(b[0] - px) + Math.abs(b[1] - py)));
   return adj[0];
 }
 
 // ── Bucket Fill ──────────────────────────────────────────────────────────────
-function bucketFill(sx, sy, newTile, newColor) {
-  const oldTile = tileAt(sx, sy);
-  const oldColor = oldTile === T.CUSTOM ? (getColor(sx, sy) || '#ff00ff') : null;
+function bucketFill(sx, sy, newTile, newColor, layer = 0) {
+  const oldTile = tileAt(sx, sy, layer);
+  const oldColor = oldTile === T.CUSTOM ? (getColor(sx, sy, layer) || '#ff00ff') : null;
   if (oldTile === newTile && (newTile !== T.CUSTOM || oldColor === newColor)) return [];
   const changes = [], stack = [{ x: sx, y: sy }], visited = new Set();
   function matches(x, y) {
     if (Math.abs(x - sx) > 100 || Math.abs(y - sy) > 100) return false;
-    if (tileAt(x, y) !== oldTile) return false;
-    if (oldTile === T.CUSTOM) return (getColor(x, y) || '#ff00ff') === oldColor;
+    if (tileAt(x, y, layer) !== oldTile) return false;
+    if (oldTile === T.CUSTOM) return (getColor(x, y, layer) || '#ff00ff') === oldColor;
     return true;
   }
   while (stack.length > 0 && changes.length < 5000) {
@@ -1006,28 +1096,34 @@ function bucketFill(sx, sy, newTile, newColor) {
     const k = `${x},${y}`;
     if (visited.has(k) || !matches(x, y)) continue;
     visited.add(k);
-    const prev = tileAt(x, y);
-    const prevColor = prev === T.CUSTOM ? (getColor(x, y) || null) : null;
-    setTile(x, y, newTile);
-    if (newTile === T.CUSTOM && newColor) setColor(x, y, newColor);
-    else setColor(x, y, null);
+    const prev = tileAt(x, y, layer);
+    const prevColor = prev === T.CUSTOM ? (getColor(x, y, layer) || null) : null;
+    setTile(x, y, newTile, layer);
+    if (newTile === T.CUSTOM && newColor) setColor(x, y, newColor, layer);
+    else setColor(x, y, null, layer);
     changes.push({ x, y, tile: newTile, color: newColor || null, prevTile: prev, prevColor });
-    stack.push({ x: x+1, y }, { x: x-1, y }, { x, y: y+1 }, { x, y: y-1 });
+    // Only spread to neighbors not blocked by wall/door edges
+    if (!isEdgeBlocked(x, y, x+1, y, layer)) stack.push({ x: x+1, y });
+    if (!isEdgeBlocked(x, y, x-1, y, layer)) stack.push({ x: x-1, y });
+    if (!isEdgeBlocked(x, y, x, y+1, layer)) stack.push({ x, y: y+1 });
+    if (!isEdgeBlocked(x, y, x, y-1, layer)) stack.push({ x, y: y-1 });
   }
   return changes;
 }
 
-function tileKey(x, y) {
-  const t = tileAt(x, y);
-  if (t === T.CUSTOM) return 'c:' + (getColor(x, y) || '#ff00ff');
+function tileKey(x, y, layer = 0) {
+  const t = tileAt(x, y, layer);
+  if (t === T.CUSTOM) return 'c:' + (getColor(x, y, layer) || '#ff00ff');
   return 't:' + t;
 }
 
-function bucketAllRecolor(sx, sy, newTile, newColor) {
-  const targetKey = tileKey(sx, sy);
+function bucketAllRecolor(sx, sy, newTile, newColor, layer = 0) {
+  const targetKey = tileKey(sx, sy, layer);
   const changes = [];
   for (const [key, chunk] of chunks) {
-    const [cx, cy] = key.split('_').map(Number);
+    const parts = key.split('_').map(Number);
+    const [chunkLayer, cx, cy] = parts;
+    if (chunkLayer !== layer) continue;
     const baseX = cx * CHUNK_SIZE, baseY = cy * CHUNK_SIZE;
     for (let ly = 0; ly < CHUNK_SIZE; ly++) {
       for (let lx = 0; lx < CHUNK_SIZE; lx++) {
@@ -1049,8 +1145,8 @@ function bucketAllRecolor(sx, sy, newTile, newColor) {
 }
 
 // ── Player Chunks ──────────────────────────────────────────────────────────────
-function sendChunkToPlayer(ws, cx, cy) {
-  const chunk = getChunk(cx, cy);
+function sendChunkToPlayer(ws, cx, cy, layer = 0) {
+  const chunk = getChunk(cx, cy, layer);
   const colorsObj = {};
   for (const [k, v] of chunk.colors) colorsObj[k] = v;
   const msg = { t: 'chunk', cx, cy, tiles: Buffer.from(chunk.tiles).toString('base64'), colors: colorsObj };
@@ -1059,6 +1155,19 @@ function sendChunkToPlayer(ws, cx, cy) {
   if (terrain) msg.terrain = Buffer.from(terrain).toString('base64');
   const heights = loadTerrainHeights(cx, cy);
   if (heights) msg.heights = Buffer.from(heights.buffer).toString('base64');
+  // Attach tile variants for this chunk
+  if (global.tileVariantMap) {
+    const variants = {};
+    for (let ly = 0; ly < CHUNK_SIZE; ly++) {
+      for (let lx = 0; lx < CHUNK_SIZE; lx++) {
+        const wx = cx * CHUNK_SIZE + lx, wy = cy * CHUNK_SIZE + ly;
+        const vKey = `${layer}_${wx}_${wy}`;
+        const v = global.tileVariantMap.get(vKey);
+        if (v > 0) variants[`${lx}_${ly}`] = v;
+      }
+    }
+    if (Object.keys(variants).length > 0) msg.variants = variants;
+  }
   send(ws, msg);
 }
 
@@ -1066,16 +1175,17 @@ function updatePlayerChunks(p) {
   const pcx = Math.floor(p.x / CHUNK_SIZE), pcy = Math.floor(p.y / CHUNK_SIZE);
   for (let dx = -VIEW_DIST; dx <= VIEW_DIST; dx++) {
     for (let dy = -VIEW_DIST; dy <= VIEW_DIST; dy++) {
-      const key = `${pcx + dx}_${pcy + dy}`;
+      const key = `${p.layer}_${pcx + dx}_${pcy + dy}`;
       if (!p.sentChunks.has(key)) {
-        sendChunkToPlayer(p.ws, pcx + dx, pcy + dy);
+        sendChunkToPlayer(p.ws, pcx + dx, pcy + dy, p.layer);
         p.sentChunks.add(key);
       }
     }
   }
   for (const key of p.sentChunks) {
-    const [cx, cy] = key.split('_').map(Number);
-    if (Math.abs(cx - pcx) > VIEW_DIST + 2 || Math.abs(cy - pcy) > VIEW_DIST + 2) {
+    const parts = key.split('_').map(Number);
+    const [layer, cx, cy] = parts;
+    if (layer !== p.layer || Math.abs(cx - pcx) > VIEW_DIST + 2 || Math.abs(cy - pcy) > VIEW_DIST + 2) {
       p.sentChunks.delete(key);
     }
   }
@@ -1083,9 +1193,8 @@ function updatePlayerChunks(p) {
 
 // ── Player Factory ─────────────────────────────────────────────────────────────
 function createPlayer(ws) {
-  // New players start on Tutorial Island
-  const sx = tutorial.TUTORIAL_SPAWN.x;
-  const sy = tutorial.TUTORIAL_SPAWN.y;
+  const sx = SPAWN_X;
+  const sy = SPAWN_Y;
   const skills = {};
   for (const s of ALL_SKILLS) skills[s] = { xp: 0, level: 1 };
   skills.hitpoints = { xp: 1154, level: 10 };
@@ -1095,7 +1204,7 @@ function createPlayer(ws) {
   playerNames.set(pid, `Player ${pid}`);
   if (!friendsData.has(pid)) friendsData.set(pid, new Set());
   return {
-    id: pid, ws, x: sx, y: sy, prevX: sx, prevY: sy, hp: 10, maxHp: 10,
+    id: pid, ws, x: sx, y: sy, prevX: sx, prevY: sy, layer: 0, hp: 10, maxHp: 10,
     gender: 'male', sentChunks: new Set(),
     path: [], gathering: null, actionTick: 0,
     combatTarget: null, clickedNpc: null, pendingPickup: null, pendingTalk: null, gatherCluster: null,
@@ -1416,7 +1525,7 @@ function gameTick() {
       } else {
         adjacent = Math.abs(p.x - g.tx) + Math.abs(p.y - g.ty) <= 1;
       }
-      if (adjacent && tileAt(g.tx, g.ty) === g.tile) {
+      if (adjacent && tileAt(g.tx, g.ty, p.layer) === g.tile) {
         p.actionTick++;
         if (p.actionTick >= 4) {
           p.actionTick = 0;
@@ -1431,11 +1540,11 @@ function gameTick() {
               const changes = [];
               for (let dy = 0; dy < cl2.h; dy++)
                 for (let dx = 0; dx < cl2.w; dx++) {
-                  setTile(cl2.x + dx, cl2.y + dy, T.GRASS);
+                  setTile(cl2.x + dx, cl2.y + dy, T.GRASS, p.layer);
                   changes.push({ x: cl2.x + dx, y: cl2.y + dy, tile: T.GRASS });
-                  respawns.push({ x: cl2.x + dx, y: cl2.y + dy, tile: T.TREE, tick: tick + 25 });
+                  respawns.push({ x: cl2.x + dx, y: cl2.y + dy, tile: T.TREE, tick: tick + 25, layer: p.layer });
                 }
-              broadcastTiles(changes);
+              broadcastTiles(changes, p.layer);
               p.gathering = null; p.gatherCluster = null;
             }
           } else if (g.type === 'mining') {
@@ -1444,9 +1553,9 @@ function gameTick() {
             else if (addItem(p, 'Ore')) {
               addXp(p, 'mining', 30);
               sendChat(p, 'You mine some ore.', '#ff0');
-              setTile(g.tx, g.ty, T.GRASS);
-              broadcastTiles([{ x: g.tx, y: g.ty, tile: T.GRASS }]);
-              respawns.push({ x: g.tx, y: g.ty, tile: T.ROCK, tick: tick + 33 });
+              setTile(g.tx, g.ty, T.GRASS, p.layer);
+              broadcastTiles([{ x: g.tx, y: g.ty, tile: T.GRASS }], p.layer);
+              respawns.push({ x: g.tx, y: g.ty, tile: T.ROCK, tick: tick + 33, layer: p.layer });
               p.gathering = null;
             }
           } else if (g.type === 'fishing') {
@@ -1483,8 +1592,8 @@ function gameTick() {
           schedulePlayerAttack(p, npc.id, pDelay);
           scheduleNpcAttack(npc, nDelay);
         } else if (p.path.length === 0) {
-          const adj = walkAdjacentTo(npc.x, npc.y, p.x, p.y);
-          if (adj) { p.path = findPath(p.x, p.y, adj[0], adj[1]); }
+          const adj = walkAdjacentTo(npc.x, npc.y, p.x, p.y, p.layer);
+          if (adj) { p.path = findPath(p.x, p.y, adj[0], adj[1], p.layer); }
           else { p.clickedNpc = null; }
         }
       }
@@ -1498,8 +1607,8 @@ function gameTick() {
         p.combatTarget = null;
         cancelScheduled(`patk:${p.id}`);
       } else if (!isInAttackRange(p.x, p.y, npc.x, npc.y, combat.range) && p.path.length === 0) {
-        const adj = walkAdjacentTo(npc.x, npc.y, p.x, p.y);
-        if (adj) p.path = findPath(p.x, p.y, adj[0], adj[1]);
+        const adj = walkAdjacentTo(npc.x, npc.y, p.x, p.y, p.layer);
+        if (adj) p.path = findPath(p.x, p.y, adj[0], adj[1], p.layer);
       }
       // Combat heartbeat — log every tick while in combat
       if (npc && !npc.dead) {
@@ -1607,8 +1716,8 @@ function gameTick() {
   for (let i = respawns.length - 1; i >= 0; i--) {
     if (tick >= respawns[i].tick) {
       const r = respawns[i];
-      setTile(r.x, r.y, r.tile);
-      broadcastTiles([{ x: r.x, y: r.y, tile: r.tile }]);
+      setTile(r.x, r.y, r.tile, r.layer || 0);
+      broadcastTiles([{ x: r.x, y: r.y, tile: r.tile }], r.layer || 0);
       respawns.splice(i, 1);
     }
   }
@@ -1666,7 +1775,7 @@ function killPlayer(p) {
   for (let r = 0; r < 50; r++)
     for (let dx = -r; dx <= r; dx++)
       for (let dy = -r; dy <= r; dy++)
-        if (isWalkable(SPAWN_X + dx, SPAWN_Y + dy)) { p.x = SPAWN_X + dx; p.y = SPAWN_Y + dy; r = 999; dx = 999; break; }
+        if (isWalkable(SPAWN_X + dx, SPAWN_Y + dy, p.layer)) { p.x = SPAWN_X + dx; p.y = SPAWN_Y + dy; r = 999; dx = 999; break; }
   sendChat(p, 'Oh dear, you are dead!', '#f00');
   if (p.inventory.length > 3) p.inventory.splice(3);
   sendStats(p);
@@ -1711,6 +1820,14 @@ function handleMessage(ws, data) {
       // Send updated online list to all
       broadcast({ t: 'online_players', list: buildOnlineList() });
       saveFriends();
+      // Restore saved position
+      const savedPos = playerPositions.get(name);
+      if (savedPos) {
+        p.x = savedPos.x; p.y = savedPos.y; p.layer = savedPos.layer || 0;
+        p.sentChunks = new Set();
+        send(ws, { t: 'move_to', x: p.x, y: p.y, layer: p.layer });
+        updatePlayerChunks(p);
+      }
       break;
     }
     case 'friend_add': {
@@ -1781,28 +1898,28 @@ function handleMessage(ws, data) {
         cancelScheduled(`patk:${p.id}`);
         p.combatTarget = null; // clicking to move always disengages
       }
-      if (isWalkable(tx, ty)) { p.path = findPath(p.x, p.y, tx, ty); }
+      if (isWalkable(tx, ty, p.layer)) { p.path = findPath(p.x, p.y, tx, ty, p.layer); }
       else { sendChat(p, "I can't reach that.", '#f44'); }
       break;
     }
     case 'gather': {
       const tx = Math.floor(msg.x), ty = Math.floor(msg.y);
       if (Math.abs(tx - p.x) + Math.abs(ty - p.y) > 200) return;
-      const tile = tileAt(tx, ty);
+      const tile = tileAt(tx, ty, p.layer);
       const typeMap = { [T.TREE]: 'woodcutting', [T.ROCK]: 'mining', [T.FISH_SPOT]: 'fishing' };
       if (!typeMap[tile]) return;
       p.gathering = null; p.clickedNpc = null; p.combatTarget = null;
       let adj;
       if (tile === T.TREE || tile === T.ROCK) {
-        const cl = findCluster(tx, ty);
-        adj = walkToClusterBase(cl.x, cl.y, cl.w, cl.h, p.x, p.y);
+        const cl = findCluster(tx, ty, p.layer);
+        adj = walkToClusterBase(cl.x, cl.y, cl.w, cl.h, p.x, p.y, p.layer);
         p.gatherCluster = cl;
       } else {
-        adj = walkAdjacentTo(tx, ty, p.x, p.y);
+        adj = walkAdjacentTo(tx, ty, p.x, p.y, p.layer);
         p.gatherCluster = null;
       }
       if (adj) {
-        p.path = findPath(p.x, p.y, adj[0], adj[1]);
+        p.path = findPath(p.x, p.y, adj[0], adj[1], p.layer);
         p.gathering = { type: typeMap[tile], tx, ty, tile };
         p.actionTick = 0;
       }
@@ -1815,15 +1932,15 @@ function handleMessage(ws, data) {
         sendChat(p, 'You need to be next to the door.', '#f44'); return;
       }
       const dk = `${dx},${dy}`;
-      const tile = tileAt(dx, dy);
+      const tile = tileAt(dx, dy, p.layer);
       if (tile === T.DOOR) {
         let sx = dx, sy = dy;
         for (const [ndx, ndy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
-          if (tileAt(dx + ndx, dy + ndy) === T.FLOOR) { sx = dx + ndx; sy = dy + ndy; break; }
+          if (tileAt(dx + ndx, dy + ndy, p.layer) === T.FLOOR) { sx = dx + ndx; sy = dy + ndy; break; }
         }
         openDoors.set(dk, { ox: dx, oy: dy, sx, sy });
-        setTile(dx, dy, T.FLOOR);
-        broadcastTiles([{ x: dx, y: dy, tile: T.FLOOR }]);
+        setTile(dx, dy, T.FLOOR, p.layer);
+        broadcastTiles([{ x: dx, y: dy, tile: T.FLOOR }], p.layer);
         sendChat(p, 'You open the door.', '#ccc');
       } else {
         for (const [key, d] of openDoors) {
@@ -1832,8 +1949,8 @@ function handleMessage(ws, data) {
               sendChat(p, 'You need to be next to the door.', '#f44'); return;
             }
             openDoors.delete(key);
-            setTile(d.ox, d.oy, T.DOOR);
-            broadcastTiles([{ x: d.ox, y: d.oy, tile: T.DOOR }]);
+            setTile(d.ox, d.oy, T.DOOR, p.layer);
+            broadcastTiles([{ x: d.ox, y: d.oy, tile: T.DOOR }], p.layer);
             sendChat(p, 'You close the door.', '#ccc');
             break;
           }
@@ -1853,7 +1970,7 @@ function handleMessage(ws, data) {
           sendStats(p); sendChat(p, `You pick up: ${gi.name}`, '#ff0');
         }
       } else {
-        p.path = findPath(p.x, p.y, gi.x, gi.y);
+        p.path = findPath(p.x, p.y, gi.x, gi.y, p.layer);
         p.pendingPickup = gid;
       }
       break;
@@ -1895,9 +2012,9 @@ function handleMessage(ws, data) {
       if (npc.tutorialNpc) {
         // Walk to NPC first if not adjacent
         if (!isCardinalAdjacent(p.x, p.y, npc.x, npc.y)) {
-          const adj = walkAdjacentTo(npc.x, npc.y, p.x, p.y);
+          const adj = walkAdjacentTo(npc.x, npc.y, p.x, p.y, p.layer);
           if (adj) {
-            p.path = findPath(p.x, p.y, adj[0], adj[1]);
+            p.path = findPath(p.x, p.y, adj[0], adj[1], p.layer);
             p.pendingTalk = npcId;
           }
         } else {
@@ -1915,14 +2032,96 @@ function handleMessage(ws, data) {
         p.clickedNpc = npcId;
       } else if (combat.range <= 1) {
         // Melee — walk adjacent
-        const adj = walkAdjacentTo(npc.x, npc.y, p.x, p.y);
-        if (adj) { p.path = findPath(p.x, p.y, adj[0], adj[1]); p.clickedNpc = npcId; }
+        const adj = walkAdjacentTo(npc.x, npc.y, p.x, p.y, p.layer);
+        if (adj) { p.path = findPath(p.x, p.y, adj[0], adj[1], p.layer); p.clickedNpc = npcId; }
       } else {
         // Ranged/magic — walk until in range (just walk toward, combat tick will handle range check)
-        const adj = walkAdjacentTo(npc.x, npc.y, p.x, p.y);
-        if (adj) { p.path = findPath(p.x, p.y, adj[0], adj[1]); }
+        const adj = walkAdjacentTo(npc.x, npc.y, p.x, p.y, p.layer);
+        if (adj) { p.path = findPath(p.x, p.y, adj[0], adj[1], p.layer); }
         p.clickedNpc = npcId;
       }
+      break;
+    }
+    case 'half_paint': {
+      const x = Math.floor(msg.x), y = Math.floor(msg.y);
+      if (Math.abs(x - p.x) > ENTITY_VIEW || Math.abs(y - p.y) > ENTITY_VIEW) break;
+      // Broadcast to players on same layer
+      for (const [ws2, op] of players) {
+        if (op.layer === p.layer) send(ws2, { t: 'half_paint', x, y, side: msg.side, tile: msg.tile, color: msg.color });
+      }
+      break;
+    }
+    case 'door_toggle': {
+      const x = Math.floor(msg.x), y = Math.floor(msg.y);
+      const side = Math.floor(msg.side) & 0xF;
+      if (Math.abs(x - p.x) > ENTITY_VIEW || Math.abs(y - p.y) > ENTITY_VIEW) break;
+      // Toggle open state on server — open doors don't block
+      const key = `${p.layer}_${x}_${y}`;
+      const curOpen = serverOpenDoors.get(key) || 0;
+      const newOpen = curOpen ^ side;
+      if (newOpen === 0) serverOpenDoors.delete(key);
+      else serverOpenDoors.set(key, newOpen);
+      // Broadcast to players on same layer
+      for (const [ws2, op] of players) {
+        if (op.layer === p.layer) send(ws2, { t: 'door_toggle', x, y, side, open: !!(newOpen & side) });
+      }
+      break;
+    }
+    case 'door_edge': {
+      const x = Math.floor(msg.x), y = Math.floor(msg.y);
+      const mask = Math.floor(msg.mask) & 0xF;
+      if (Math.abs(x - p.x) > ENTITY_VIEW || Math.abs(y - p.y) > ENTITY_VIEW) break;
+      if (mask === 0) serverDoorEdges.delete(`${p.layer}_${x}_${y}`);
+      else serverDoorEdges.set(`${p.layer}_${x}_${y}`, mask);
+      for (const [ws2, op] of players) {
+        if (op.layer === p.layer) send(ws2, { t: 'door_edge', x, y, mask });
+      }
+      break;
+    }
+    case 'set_height': {
+      const x = Math.floor(msg.x), y = Math.floor(msg.y);
+      const h = parseFloat(msg.h) || 0;
+      if (Math.abs(x - p.x) > ENTITY_VIEW || Math.abs(y - p.y) > ENTITY_VIEW) break;
+      const key = `${p.layer}_${x}_${y}`;
+      if (h === 0) serverTileHeights.delete(key);
+      else serverTileHeights.set(key, h);
+      for (const [ws2] of players) send(ws2, { t: 'set_height', x, y, h, layer: p.layer });
+      break;
+    }
+    case 'wall_edge': {
+      const x = Math.floor(msg.x), y = Math.floor(msg.y);
+      const mask = Math.floor(msg.mask) & 0x3F;
+      if (Math.abs(x - p.x) > ENTITY_VIEW || Math.abs(y - p.y) > ENTITY_VIEW) break;
+      if (mask === 0) serverWallEdges.delete(`${p.layer}_${x}_${y}`);
+      else serverWallEdges.set(`${p.layer}_${x}_${y}`, mask);
+      for (const [ws2, op] of players) {
+        if (op.layer === p.layer) send(ws2, { t: 'wall_edge', x, y, mask });
+      }
+      break;
+    }
+    case 'place_roof': {
+      const roof = msg.roof;
+      if (!roof) break;
+      roof.id = serverNextRoofId++;
+      roof.layer = p.layer;
+      const key = `${roof.layer}_${roof.id}`;
+      serverRoofs.set(key, roof);
+      for (const [ws2] of players) send(ws2, { t: 'place_roof', roof });
+      break;
+    }
+    case 'update_roof': {
+      const roof = msg.roof;
+      if (!roof) break;
+      const key = `${roof.layer}_${roof.id}`;
+      if (!serverRoofs.has(key)) break;
+      serverRoofs.set(key, roof);
+      for (const [ws2] of players) send(ws2, { t: 'update_roof', roof });
+      break;
+    }
+    case 'delete_roof': {
+      const key = `${msg.layer}_${msg.id}`;
+      serverRoofs.delete(key);
+      for (const [ws2] of players) send(ws2, { t: 'delete_roof', layer: msg.layer, id: msg.id });
       break;
     }
     case 'paint': {
@@ -1933,35 +2132,55 @@ function handleMessage(ws, data) {
         if (Math.abs(x - p.x) > ENTITY_VIEW || Math.abs(y - p.y) > ENTITY_VIEW) continue;
         const tile = Math.floor(t.tile);
         if (tile < 0 || tile > T.CUSTOM) continue;
-        setTile(x, y, tile);
-        if (tile === T.CUSTOM && t.color) setColor(x, y, String(t.color).slice(0, 7));
-        else setColor(x, y, null);
-        changes.push({ x, y, tile, color: t.color || null });
+        const variant = Math.floor(t.variant || 0);
+        setTile(x, y, tile, p.layer);
+        if (tile === T.CUSTOM && t.color) setColor(x, y, String(t.color).slice(0, 7), p.layer);
+        else setColor(x, y, null, p.layer);
+        // Store variant
+        const vKey = `${p.layer}_${x}_${y}`;
+        if (!global.tileVariantMap) global.tileVariantMap = new Map();
+        if (variant > 0) global.tileVariantMap.set(vKey, variant);
+        else global.tileVariantMap.delete(vKey);
+        changes.push({ x, y, tile, color: t.color || null, variant });
       }
-      if (changes.length > 0) broadcastTiles(changes);
+      if (changes.length > 0) broadcastTiles(changes, p.layer);
       break;
     }
     case 'bucket': {
       const x = Math.floor(msg.x), y = Math.floor(msg.y);
       const tile = Math.floor(msg.tile);
+      const variant = Math.floor(msg.variant || 0);
       if (Math.abs(x - p.x) > ENTITY_VIEW || Math.abs(y - p.y) > ENTITY_VIEW) return;
       if (tile < 0 || tile > T.CUSTOM) return;
-      const changes = bucketFill(x, y, tile, msg.color || null);
+      const changes = bucketFill(x, y, tile, msg.color || null, p.layer);
       if (changes.length > 0) {
-        broadcastTiles(changes.map(c => ({ x: c.x, y: c.y, tile: c.tile, color: c.color })));
-        send(ws, { t: 'bucket_undo', changes: changes.map(c => ({ x: c.x, y: c.y, tile: c.prevTile, color: c.prevColor })) });
+        for (const c of changes) {
+          const vKey = `${p.layer}_${c.x}_${c.y}`;
+          c.prevVariant = global.tileVariantMap.get(vKey) || 0;
+          if (variant > 0) global.tileVariantMap.set(vKey, variant);
+          else global.tileVariantMap.delete(vKey);
+        }
+        broadcastTiles(changes.map(c => ({ x: c.x, y: c.y, tile: c.tile, color: c.color, variant })), p.layer);
+        send(ws, { t: 'bucket_undo', changes: changes.map(c => ({ x: c.x, y: c.y, tile: c.prevTile, color: c.prevColor, variant: c.prevVariant })) });
       }
       break;
     }
     case 'bucket_all': {
       const x = Math.floor(msg.x), y = Math.floor(msg.y);
       const tile = Math.floor(msg.tile);
+      const variant = Math.floor(msg.variant || 0);
       if (Math.abs(x - p.x) > ENTITY_VIEW || Math.abs(y - p.y) > ENTITY_VIEW) return;
       if (tile < 0 || tile > T.CUSTOM) return;
-      const changes = bucketAllRecolor(x, y, tile, msg.color || null);
+      const changes = bucketAllRecolor(x, y, tile, msg.color || null, p.layer);
       if (changes.length > 0) {
-        broadcastTiles(changes.map(c => ({ x: c.x, y: c.y, tile: c.tile, color: c.color })));
-        send(ws, { t: 'bucket_undo', changes: changes.map(c => ({ x: c.x, y: c.y, tile: c.prevTile, color: c.prevColor })) });
+        for (const c of changes) {
+          const vKey = `${p.layer}_${c.x}_${c.y}`;
+          c.prevVariant = global.tileVariantMap.get(vKey) || 0;
+          if (variant > 0) global.tileVariantMap.set(vKey, variant);
+          else global.tileVariantMap.delete(vKey);
+        }
+        broadcastTiles(changes.map(c => ({ x: c.x, y: c.y, tile: c.tile, color: c.color, variant })), p.layer);
+        send(ws, { t: 'bucket_undo', changes: changes.map(c => ({ x: c.x, y: c.y, tile: c.prevTile, color: c.prevColor, variant: c.prevVariant })) });
         sendChat(p, `Recolored ${changes.length} tiles globally.`, '#ff981f');
       }
       break;
@@ -1969,19 +2188,36 @@ function handleMessage(ws, data) {
     case 'bucket_new': {
       const x = Math.floor(msg.x), y = Math.floor(msg.y);
       const tile = Math.floor(msg.tile);
+      const variant = Math.floor(msg.variant || 0);
       const name = String(msg.name || '').slice(0, 30);
       if (Math.abs(x - p.x) > ENTITY_VIEW || Math.abs(y - p.y) > ENTITY_VIEW) return;
       if (tile < 0 || tile > T.CUSTOM || !name) return;
       const newNameKey = tile === T.CUSTOM && msg.color ? 'c:' + msg.color : 't:' + tile;
       customNames.set(newNameKey, name);
-      const changes = bucketAllRecolor(x, y, tile, msg.color || null);
+      const changes = bucketAllRecolor(x, y, tile, msg.color || null, p.layer);
       if (changes.length > 0) {
-        broadcastTiles(changes.map(c => ({ x: c.x, y: c.y, tile: c.tile, color: c.color })));
-        send(ws, { t: 'bucket_undo', changes: changes.map(c => ({ x: c.x, y: c.y, tile: c.prevTile, color: c.prevColor })) });
+        for (const c of changes) {
+          const vKey = `${p.layer}_${c.x}_${c.y}`;
+          c.prevVariant = global.tileVariantMap.get(vKey) || 0;
+          if (variant > 0) global.tileVariantMap.set(vKey, variant);
+          else global.tileVariantMap.delete(vKey);
+        }
+        broadcastTiles(changes.map(c => ({ x: c.x, y: c.y, tile: c.tile, color: c.color, variant })), p.layer);
+        send(ws, { t: 'bucket_undo', changes: changes.map(c => ({ x: c.x, y: c.y, tile: c.prevTile, color: c.prevColor, variant: c.prevVariant })) });
       }
       const namesObj = {}; for (const [k, v] of customNames) namesObj[k] = v;
       broadcast({ t: 'names', names: namesObj });
       sendChat(p, `Renamed ${changes.length} tiles to "${name}".`, '#ff981f');
+      break;
+    }
+    case 'set_layer': {
+      const layer = Math.floor(msg.layer);
+      if (layer < -1000 || layer > 1000 || isNaN(layer)) break;
+      p.layer = layer;
+      p.sentChunks = new Set();
+      updatePlayerChunks(p);
+      // Client already has all edges, no need to resend on layer change
+      sendChat(p, `Layer: ${layer}`, '#ff981f');
       break;
     }
   }
@@ -1992,12 +2228,12 @@ const clientPath = path.join(__dirname, 'client.html');
 const mapPath = path.join(__dirname, 'map.html');
 const launcherPath = path.join(__dirname, 'launcher.html');
 const server = http.createServer((req, res) => {
-  // Serve static data files
-  if (req.url === '/data/object-placements.json' || req.url === '/data/object-defs.json') {
-    const dataFile = path.join(__dirname, req.url.slice(1)); // strip leading /
-    if (fs.existsSync(dataFile)) {
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600', 'Access-Control-Allow-Origin': '*' });
-      res.end(fs.readFileSync(dataFile));
+  // Serve static lib files (Three.js etc.)
+  if (req.url.startsWith('/lib/')) {
+    const libFile = path.join(__dirname, req.url);
+    if (fs.existsSync(libFile)) {
+      res.writeHead(200, { 'Content-Type': 'application/javascript', 'Cache-Control': 'public, max-age=86400' });
+      res.end(fs.readFileSync(libFile));
       return;
     }
     res.writeHead(404); res.end('Not found'); return;
@@ -2014,6 +2250,19 @@ const server = http.createServer((req, res) => {
       return;
     }
     res.writeHead(404); res.end('Not found'); return;
+  }
+  // API: auto-login with name parameter
+  if (req.url.startsWith('/play?')) {
+    const params = new URL(req.url, 'http://localhost').searchParams;
+    const name = params.get('name');
+    let html = fs.readFileSync(clientPath, 'utf8');
+    if (name) {
+      // Inject auto-login script
+      html = html.replace('</body>', `<script>window.autoLoginName = "${name.replace(/"/g, '')}";</script></body>`);
+    }
+    res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' });
+    res.end(html);
+    return;
   }
   let file;
   if (req.url === '/play') file = clientPath;
@@ -2033,8 +2282,14 @@ wss.on('connection', (ws) => {
 
   const namesObj = {}; for (const [k, v] of customNames) namesObj[k] = v;
   const pName = playerNames.get(p.id) || `Player ${p.id}`;
-  send(ws, { t: 'welcome', id: p.id, x: p.x, y: p.y, customNames: namesObj, chunkSize: CHUNK_SIZE, name: pName });
+  send(ws, { t: 'welcome', id: p.id, x: p.x, y: p.y, layer: p.layer, customNames: namesObj, chunkSize: CHUNK_SIZE, name: pName });
   updatePlayerChunks(p);
+  // Send all wall/door data to client
+  const allWalls = {}; for (const [k, v] of serverWallEdges) allWalls[k] = v;
+  const allDoors = {}; for (const [k, v] of serverDoorEdges) allDoors[k] = v;
+  const allHeights = {}; for (const [k, v] of serverTileHeights) allHeights[k] = v;
+  const allRoofs = {}; for (const [k, v] of serverRoofs) allRoofs[k] = v;
+  send(ws, { t: 'all_edges', walls: allWalls, doors: allDoors, heights: allHeights, roofs: allRoofs });
   sendStats(p);
   sendFriendsList(p);
   sendChat(p, `Welcome to OpenScape! ${players.size} player(s) online.`, '#ff981f');
@@ -2052,126 +2307,13 @@ wss.on('connection', (ws) => {
     notifyFriendsOfStatus(p.id, false);
     // Update online list for remaining players
     broadcast({ t: 'online_players', list: buildOnlineList() });
+    // Save position on disconnect
+    const name = playerNames.get(p.id);
+    if (name) playerPositions.set(name, { x: p.x, y: p.y, layer: p.layer });
+    savePositions();
     console.log(`[leave] Player ${p.id} disconnected (${players.size} online)`);
   });
 });
-
-// ── OSRS Sync Server (receives live data from RuneLite Combat Debug plugin) ──
-const SYNC_PORT = 2223;
-const syncServer = new WebSocket.Server({ port: SYNC_PORT });
-let osrsSync = null; // latest OSRS state
-let syncNpcs = new Map(); // idx -> mirrored NPC data
-
-syncServer.on('connection', (ws) => {
-  console.log('[osrs-sync] RuneLite plugin connected');
-  ws.on('message', (data) => {
-    try {
-      const msg = JSON.parse(data.toString());
-      if (msg.t === 'sync') {
-        osrsSync = msg;
-        // Mirror player position, stats, and equipment to first OpenScape player
-        if (msg.player && players.size > 0) {
-          const firstPlayer = players.values().next().value;
-          if (firstPlayer) {
-            firstPlayer.x = msg.player.x;
-            firstPlayer.y = msg.player.y;
-            firstPlayer.path = []; // cancel any movement
-
-            // Sync stats
-            if (msg.player.attack !== undefined) {
-              firstPlayer.skills = firstPlayer.skills || {};
-              firstPlayer.skills.attack = msg.player.attack;
-              firstPlayer.skills.strength = msg.player.strength;
-              firstPlayer.skills.defence = msg.player.defence;
-              firstPlayer.skills.ranged = msg.player.ranged;
-              firstPlayer.skills.magic = msg.player.magic;
-              firstPlayer.skills.prayer = msg.player.prayer;
-              firstPlayer.skills.hitpoints = msg.player.maxHp;
-              firstPlayer.hp = msg.player.hp;
-              firstPlayer.maxHp = msg.player.maxHp;
-            }
-
-            // Sync equipment
-            if (msg.player.equipment) {
-              firstPlayer.equipment = firstPlayer.equipment || {};
-              for (const [slot, id] of Object.entries(msg.player.equipment)) {
-                if (id > 0) firstPlayer.equipment[slot] = id;
-                else delete firstPlayer.equipment[slot];
-              }
-            }
-          }
-        }
-        // Mirror NPCs — create/update sync NPCs
-        if (msg.npcs) {
-          const seenIdx = new Set();
-          for (const npcData of msg.npcs) {
-            seenIdx.add(npcData.idx);
-            let existing = null;
-            // Find existing NPC with matching sync index
-            for (const npc of npcs) {
-              if (npc.syncIdx === npcData.idx) { existing = npc; break; }
-            }
-            if (existing) {
-              // Update position
-              existing.prevX = existing.x;
-              existing.prevY = existing.y;
-              existing.x = npcData.x;
-              existing.y = npcData.y;
-              existing.syncAnim = npcData.anim;
-              if (npcData.hp >= 0 && npcData.maxHp > 0) {
-                existing.hp = Math.round((npcData.hp / npcData.maxHp) * existing.maxHp);
-              }
-            } else {
-              // Spawn new synced NPC
-              const def = npcDefs.get(npcData.id);
-              const stats = def && def.stats ? def.stats : [1,1,1,1,1,1];
-              const hp = def ? Math.max(1, stats[3]) : 10;
-              npcs.push({
-                id: npcs.length, defId: npcData.id, name: npcData.name,
-                x: npcData.x, y: npcData.y, spawnX: npcData.x, spawnY: npcData.y,
-                prevX: npcData.x, prevY: npcData.y,
-                hp, maxHp: hp,
-                attack: stats[0], strength: stats[2], defence: stats[1],
-                ranged: stats[4], magic: stats[5],
-                combatLevel: def ? def.combatLevel : 1,
-                aggressive: false,
-                dead: false, respawnTick: 0, wanderTick: 99999999,
-                nextAttackTick: 0, attackSpeed: 4,
-                combatTarget: null, combatTimeout: 0,
-                drops: def ? getDropTable(def) : [],
-                color: '#8b1a1a',
-                syncIdx: npcData.idx, // mark as synced NPC
-                syncAnim: npcData.anim,
-              });
-              syncNpcs.set(npcData.idx, npcs[npcs.length - 1]);
-              console.log(`[osrs-sync] Spawned ${npcData.name} (osrs id=${npcData.id}) at ${npcData.x},${npcData.y}`);
-            }
-          }
-          // Remove synced NPCs that are no longer nearby
-          for (let i = npcs.length - 1; i >= 0; i--) {
-            if (npcs[i].syncIdx !== undefined && !seenIdx.has(npcs[i].syncIdx)) {
-              syncNpcs.delete(npcs[i].syncIdx);
-              npcs.splice(i, 1);
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.error('[osrs-sync] Parse error:', e.message);
-    }
-  });
-  ws.on('close', () => {
-    console.log('[osrs-sync] RuneLite plugin disconnected');
-    // Clean up synced NPCs
-    for (let i = npcs.length - 1; i >= 0; i--) {
-      if (npcs[i].syncIdx !== undefined) npcs.splice(i, 1);
-    }
-    syncNpcs.clear();
-    osrsSync = null;
-  });
-});
-
-console.log(`[osrs-sync] Listening on ws://localhost:${SYNC_PORT}`);
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 fs.mkdirSync(CHUNKS_DIR, { recursive: true });
@@ -2182,20 +2324,30 @@ if (fs.existsSync(NAMES_FILE)) {
 }
 loadDefinitions();
 loadFriends();
+loadWalls();
+loadVariants();
+loadPositions();
 initBotPlayer();
-spawnNpcs();
-spawnTutorialNpcs();
+
+// Create a small grass island at spawn so the player can stand
+for (let dx = -3; dx <= 3; dx++) {
+  for (let dy = -3; dy <= 3; dy++) {
+    setTile(SPAWN_X + dx, SPAWN_Y + dy, T.GRASS);
+  }
+}
 
 setInterval(gameTick, TICK_MS);
 setInterval(saveAllChunks, SAVE_INTERVAL_MS);
-setInterval(saveFriends, SAVE_INTERVAL_MS); // save friends alongside chunks
-process.on('SIGINT', () => { saveAllChunks(); saveFriends(); process.exit(); });
-process.on('SIGTERM', () => { saveAllChunks(); saveFriends(); process.exit(); });
+setInterval(saveFriends, SAVE_INTERVAL_MS);
+setInterval(saveWalls, SAVE_INTERVAL_MS);
+setInterval(saveVariants, SAVE_INTERVAL_MS);
+process.on('SIGINT', () => { saveAllChunks(); saveFriends(); saveWalls(); saveVariants(); savePositions(); process.exit(); });
+process.on('SIGTERM', () => { saveAllChunks(); saveFriends(); saveWalls(); saveVariants(); savePositions(); process.exit(); });
 
 server.listen(PORT, () => {
   console.log(`[server] OpenScape running on http://localhost:${PORT}`);
   console.log(`[server] Chunk-based world (${CHUNK_SIZE}x${CHUNK_SIZE} chunks, view=${VIEW_DIST})`);
-  console.log(`[server] Spawn: OSRS (${SPAWN_X}, ${SPAWN_Y}) Lumbridge`);
+  console.log(`[server] Spawn: (${SPAWN_X}, ${SPAWN_Y})`);
   // Start Discord message polling
   startDiscordPolling();
 });

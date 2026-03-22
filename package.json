@@ -1,13 +1,12 @@
 {
   "name": "openscape",
   "version": "1.0.0",
+  "description": "Open source browser RPG engine inspired by OSRS",
   "private": true,
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "lodash": "^4.17.23",
-    "osrscachereader": "^1.1.3",
     "ws": "^8.16.0"
   }
 }
