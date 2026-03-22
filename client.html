@@ -1496,6 +1496,17 @@
   </div>
 </div>
 
+<!-- Build Mode Settings -->
+<div id="build-settings-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);z-index:500;font-family:'Courier New',monospace;overflow-y:auto;">
+  <div style="max-width:700px;margin:40px auto;padding:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h1 style="color:#3a7;margin:0;font-size:24px;">BUILD SETTINGS</h1>
+      <button onclick="closeSettings()" style="background:#333;color:#fff;border:1px solid #555;padding:8px 16px;cursor:pointer;font:14px monospace;">Close (ESC)</button>
+    </div>
+    <div id="build-settings-content"></div>
+  </div>
+</div>
+
 <!-- Room Selection Panel -->
 <div id="room-panel" style="display:none;position:fixed;background:#1a1510;border:2px solid #5c4a2a;padding:8px;z-index:200;font:12px monospace;color:#ff981f;">
   <div style="margin-bottom:4px;font-weight:bold;">Room (<span id="room-tile-count">0</span> tiles)</div>
@@ -1558,21 +1569,8 @@ function getGameArea() {
 }
 function resizeCanvas() {
   const area = getGameArea();
-  if (typeof buildMode !== 'undefined' && buildMode) {
-    // Build mode: 2D canvas takes left half
-    const halfW = Math.floor(area.w / 2);
-    canvas.width = halfW; canvas.height = area.h;
-    canvas.style.width = halfW + 'px'; canvas.style.height = area.h + 'px';
-    // Also resize 3D renderer if active
-    if (typeof renderer3d !== 'undefined' && renderer3d && typeof camera3d !== 'undefined' && camera3d) {
-      renderer3d.setSize(area.w - halfW, area.h);
-      camera3d.aspect = (area.w - halfW) / area.h;
-      camera3d.updateProjectionMatrix();
-    }
-  } else {
-    canvas.width = area.w; canvas.height = area.h;
-    canvas.style.width = area.w + 'px'; canvas.style.height = area.h + 'px';
-  }
+  canvas.width = area.w; canvas.height = area.h;
+  canvas.style.width = area.w + 'px'; canvas.style.height = area.h + 'px';
   TILE = Math.max(MIN_TILE, Math.min(MAX_TILE, TILE));
 }
 resizeCanvas();
@@ -3301,8 +3299,11 @@ window._settingAction = function(id) { const def = SETTINGS_REGISTRY[id]; if (de
 
 // ── Keybinds Renderer ──────────────────────────────────────────────────────
 function renderKeybindsSection() {
+  // Only show In-Game and 3D Controls in play mode — building keybinds are in build settings
+  const buildCategories = new Set(['Building', 'Objects']);
   const categories = {};
   for (const [action, bind] of Object.entries(keybinds)) {
+    if (buildCategories.has(bind.category)) continue;
     if (!categories[bind.category]) categories[bind.category] = [];
     categories[bind.category].push({ action, ...bind });
   }
@@ -3368,17 +3369,61 @@ function renderSettingsTab(tab) {
 
 // ── Open / Close Settings (play mode only) ─────────────────────────────────
 function openSettings() {
-  if (typeof buildMode !== 'undefined' && buildMode) return;
   settingsOpen = true;
-  document.getElementById('settings-overlay').style.display = 'block';
-  renderSettingsTab(activeSettingsTab);
+  if (buildMode) {
+    document.getElementById('build-settings-overlay').style.display = 'block';
+    renderBuildSettings();
+  } else {
+    document.getElementById('settings-overlay').style.display = 'block';
+    renderSettingsTab(activeSettingsTab);
+  }
 }
 
 function closeSettings() {
   settingsOpen = false;
   rebindingAction = null;
   document.getElementById('settings-overlay').style.display = 'none';
+  document.getElementById('build-settings-overlay').style.display = 'none';
 }
+
+function renderBuildSettings() {
+  const content = document.getElementById('build-settings-content');
+  // Only show building keybinds
+  const buildCategories = ['Building', 'Camera', 'Objects'];
+  const categories = {};
+  for (const [action, bind] of Object.entries(keybinds)) {
+    if (!buildCategories.includes(bind.category)) continue;
+    if (!categories[bind.category]) categories[bind.category] = [];
+    categories[bind.category].push({ action, ...bind });
+  }
+  let html = '';
+  for (const [cat, binds] of Object.entries(categories)) {
+    html += '<h3 style="color:#ff981f;border-bottom:1px solid #5c4a2a;padding-bottom:6px;margin:16px 0 8px;">' + cat + '</h3>';
+    for (const bind of binds) {
+      const isRebinding = rebindingAction === bind.action;
+      const isModified = bind.key !== defaultKeybinds[bind.action].key;
+      let isDuplicate = false;
+      if (bind.key) {
+        for (const [a2, b2] of Object.entries(keybinds)) {
+          if (a2 !== bind.action && b2.key === bind.key) { isDuplicate = true; break; }
+        }
+      }
+      const keyColor = isDuplicate ? '#f44' : (isRebinding ? '#fff' : '#ff981f');
+      const keyBg = isDuplicate ? '#4a1a1a' : (isRebinding ? '#a53' : '#2a2a2a');
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);">'
+        + '<span style="color:#ccc;">' + bind.label + (isDuplicate ? ' <span style="color:#f44;font-size:10px;">(conflict!)</span>' : '') + '</span>'
+        + '<div style="display:flex;gap:6px;align-items:center;">'
+        + '<button onclick="window._startRebind(\'' + bind.action + '\');renderBuildSettings()" style="min-width:120px;padding:4px 12px;background:' + keyBg + ';color:' + keyColor + ';border:1px solid ' + (isDuplicate ? '#f44' : (isRebinding ? '#f66' : '#555')) + ';cursor:pointer;font:12px monospace;text-align:center;">'
+        + (isRebinding ? 'Press a key...' : (bind.key || '\u2014'))
+        + '</button>'
+        + (isModified ? '<button onclick="window._resetKeybind(\'' + bind.action + '\');renderBuildSettings()" style="padding:4px 8px;background:#333;color:#888;border:1px solid #555;cursor:pointer;font:10px monospace;" title="Reset to default">&#8634;</button>' : '')
+        + '</div></div>';
+    }
+  }
+  html += '<div style="margin-top:20px;"><button onclick="window._resetAllKeybinds();renderBuildSettings()" style="padding:8px 16px;background:#633;color:#faa;border:1px solid #a55;cursor:pointer;font:12px monospace;">Reset All to Defaults</button></div>';
+  content.innerHTML = html;
+}
+window.renderBuildSettings = renderBuildSettings;
 
 // ── Keybind Rebinding ──────────────────────────────────────────────────────
 window._startRebind = function(action) { rebindingAction = action; renderSettingsTab('controls'); };
@@ -3402,12 +3447,10 @@ document.addEventListener('keydown', (e) => {
 }, true);
 
 // Wire up settings UI
-try {
-  document.getElementById('settings-close').addEventListener('click', closeSettings);
-  document.querySelectorAll('.settings-tab-v').forEach(tab => {
-    tab.addEventListener('click', () => renderSettingsTab(tab.dataset.tab));
-  });
-} catch(e) { console.warn('Settings UI init error:', e); }
+document.getElementById('settings-close').addEventListener('click', closeSettings);
+document.querySelectorAll('.settings-tab-v').forEach(tab => {
+  tab.addEventListener('click', () => renderSettingsTab(tab.dataset.tab));
+});
 
 window.__cp=(window.__cp||[]);window.__cp.push('PS1'); // ── PS1-style procedural textures (16x16 pixels, no filtering) ──
 const TEX_SIZE = 16;
@@ -6026,91 +6069,22 @@ function toggleBuildMode() {
   const c2d = document.getElementById('game');
   const c3d = document.getElementById('game3d');
 
+  // Close settings when switching modes
+  closeSettings();
+
   if (buildMode) {
-    // ── Split screen: 2D left, 3D right ──
-    const halfW = Math.floor(window.innerWidth / 2);
-
-    // 2D canvas: left half
-    c2d.style.width = halfW + 'px';
-    c2d.style.height = window.innerHeight + 'px';
-    c2d.style.left = '0';
-    c2d.style.display = 'block';
-    c2d.style.zIndex = '1';
-
-    // 3D canvas: right half
-    c3d.style.width = (window.innerWidth - halfW) + 'px';
-    c3d.style.height = window.innerHeight + 'px';
-    c3d.style.left = halfW + 'px';
-    c3d.style.display = 'block';
-    c3d.style.zIndex = '50';
-
-    // Init 3D if needed
-    if (!scene3d) init3D();
-    renderer3d.setSize(window.innerWidth - halfW, window.innerHeight);
-    camera3d.aspect = (window.innerWidth - halfW) / window.innerHeight;
-    camera3d.updateProjectionMatrix();
-    cam3dTargetX = myX; cam3dTargetZ = -myY;
-    clearScene3D();
-
-    // Resize 2D canvas internal resolution
-    resizeCanvas();
-
-    // Start 3D render loop if not running
-    if (!mode3d) {
-      mode3d = true;
-      (function animate3dBuild() {
-        if (!buildMode) { mode3d = false; return; }
-        update3D();
-        requestAnimationFrame(animate3dBuild);
-      })();
-    }
-
-    // Hide non-essential panels
+    // Build mode: full screen 2D, hide play panels
+    if (mode3d) toggle3D(); // exit 3D if active
     const sidebar = document.getElementById('panel-sidebar');
-    const chat = document.getElementById('panel-chat');
-    const minimap = document.getElementById('panel-minimap');
     const combat = document.getElementById('combat-overlay');
     if (sidebar) sidebar.style.display = 'none';
-    if (chat) chat.style.display = 'none';
-    if (minimap) minimap.style.display = 'none';
     if (combat) combat.style.display = 'none';
-    // Hide all popout panels
-    document.querySelectorAll('.popout-panel').forEach(p => p.style.display = 'none');
-
   } else {
-    // ── Restore normal layout ──
-    // 2D canvas: full screen
-    c2d.style.width = '';
-    c2d.style.height = '';
-    c2d.style.left = '0';
-    c2d.style.display = 'block';
-    c2d.style.zIndex = '1';
-
-    // Hide 3D canvas
-    c3d.style.display = 'none';
-    c3d.style.width = '';
-    c3d.style.height = '';
-    c3d.style.left = '0';
-    mode3d = false;
-    const cc = document.getElementById('compass3d');
-    if (cc) cc.style.display = 'none';
-
-    // Restore 2D canvas resolution
-    resizeCanvas();
-
-    // Show panels again
+    // Play mode: show play panels, reset tools
     const sidebar = document.getElementById('panel-sidebar');
-    const chat = document.getElementById('panel-chat');
-    const minimap = document.getElementById('panel-minimap');
     const combat = document.getElementById('combat-overlay');
     if (sidebar) sidebar.style.display = 'flex';
-    if (chat) chat.style.display = 'flex';
-    if (minimap) minimap.style.display = 'block';
     if (combat) combat.style.display = '';
-    // Restore popout panels
-    document.querySelectorAll('.popout-panel').forEach(p => p.style.display = '');
-
-    // Reset pan and tools
     panOffX = 0; panOffY = 0; setTool(null); wallToolActive = false; doorToolActive = false; roomToolActive = false; eraserActive = false; activeElevTool = null; deactivateRoofTool();
   }
 
@@ -7357,29 +7331,20 @@ document.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); return; }
   if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) { e.preventDefault(); redo(); return; }
 
-  // In 3D mode, WASD is movement — skip 2D tool binds
-  if (mode3d) {
-    if ('wasd'.includes(e.key.toLowerCase())) return;
-  }
+  // In 3D mode, WASD is movement — but check tool binds first
+  // (tool keybinds take priority over WASD movement)
 
-  if (e.key === 'h' || e.key === 'H') {
-    document.getElementById('btn-select').click();
-    return;
-  }
-  if (e.key === 'k' || e.key === 'K') {
-    // Sledgehammer — alias for eraser
-    document.getElementById('btn-eraser').click();
-    return;
-  }
-  if (!mode3d && (e.key === 'p' || e.key === 'P')) setTool('pencil');
-  if (e.key === 'b' || e.key === 'B') setTool('bucket');
-  if (e.key === 'i' || e.key === 'I') setTool('picker');
-  if (e.key === 't' || e.key === 'T') {
-    myGender = myGender === 'male' ? 'female' : 'male';
-    sendMsg({ t: 'gender', v: myGender });
-    showChat(`Gender: ${myGender}`, '#333');
-  }
-  if (e.key === 'g') {
+  // Use customizable keybinds
+  if (matchesKeybind(e, 'build.select')) { document.getElementById('btn-select').click(); return; }
+  if (matchesKeybind(e, 'build.eraser')) { document.getElementById('btn-eraser').click(); return; }
+  if (matchesKeybind(e, 'build.wall')) { document.getElementById('btn-wall').click(); return; }
+  if (matchesKeybind(e, 'build.room')) { document.getElementById('btn-room').click(); return; }
+  if (matchesKeybind(e, 'build.door')) { document.getElementById('btn-door').click(); return; }
+  if (matchesKeybind(e, 'build.pencil') && !mode3d) { setTool('pencil'); return; }
+  if (matchesKeybind(e, 'build.bucket')) { setTool('bucket'); return; }
+  if (matchesKeybind(e, 'build.eyedropper')) { setTool('tile_picker'); return; }
+  if (matchesKeybind(e, 'build.roof')) { document.getElementById('btn-roof').click(); return; }
+  if (matchesKeybind(e, 'build.grid')) {
     showGrid = !showGrid;
     document.getElementById('btn-grid').classList.toggle('active', showGrid);
     if (mode3d) {
@@ -7387,7 +7352,8 @@ document.addEventListener('keydown', (e) => {
         if (mesh.children[0]) mesh.children[0].visible = showGrid;
       }
     }
-    showChat(showGrid ? 'Tile grid ON (G)' : 'Tile grid OFF (G)', '#333');
+    showChat(showGrid ? 'Tile grid ON' : 'Tile grid OFF', '#333');
+    return;
   }
   if (e.key === 'G') {
     showChunkGrid = !showChunkGrid;
@@ -7410,8 +7376,8 @@ document.addEventListener('keydown', (e) => {
     showTerrainColors = !showTerrainColors;
     showChat(showTerrainColors ? 'Terrain colors ON (R to toggle)' : 'Terrain colors OFF', '#333');
   }
-  if (e.key === '3') { if (buildMode) { showChat('Split view active in Build Mode — both 2D and 3D shown', '#3a7'); } else { toggle3D(); } }
-  if (e.key === 'f' || e.key === 'F') {
+  if (e.key === '3') { toggle3D(); }
+  if (matchesKeybind(e, 'camera.freecam')) {
     if (mode3d) {
       freeRoam3d = !freeRoam3d;
       if (!freeRoam3d) { cam3dTargetX = myX + 0.5; cam3dTargetZ = -(myY + 0.5); }
@@ -7439,14 +7405,14 @@ document.addEventListener('keydown', (e) => {
     terrain3dMeshes.clear();
     showChat(`Height scale: ${heightScale.toFixed(4)} ([ decrease, ] increase)`, '#333');
   }
-  if (e.key === 'm' || e.key === 'M') {
+  if (matchesKeybind(e, 'game.map')) {
     showOsrsMap = !showOsrsMap;
-    showChat(showOsrsMap ? 'OSRS map overlay ON (M to toggle)' : 'OSRS map overlay OFF', '#333');
+    showChat(showOsrsMap ? 'OSRS map overlay ON' : 'OSRS map overlay OFF', '#333');
   }
-  if (e.key === 'F2') { e.preventDefault(); if (!buildMode) toggleBuildMode(); }
-  if (e.key === 'F3') { e.preventDefault(); if (buildMode) toggleBuildMode(); }
-  if (e.key === 'PageUp') { e.preventDefault(); changeLayer(1); }
-  if (e.key === 'PageDown') { e.preventDefault(); changeLayer(-1); }
+  if (matchesKeybind(e, 'build.toggleMode')) { e.preventDefault(); if (!buildMode) toggleBuildMode(); }
+  if (matchesKeybind(e, 'game.playMode')) { e.preventDefault(); if (buildMode) toggleBuildMode(); }
+  if (matchesKeybind(e, 'build.layerUp')) { e.preventDefault(); changeLayer(1); }
+  if (matchesKeybind(e, 'build.layerDown')) { e.preventDefault(); changeLayer(-1); }
   if (e.key === 'u' || e.key === 'U') { toggleUIUnlock(); }
   if (e.key === '`') {
     // Send debug context to AI queue (FutureBrowser MCP)
@@ -9329,7 +9295,7 @@ function clearScene3D() {
 
 function toggle3D() {
   // In build mode, split screen handles 3D — don't toggle
-  if (buildMode) { showChat('Split view active in Build Mode — both 2D and 3D shown', '#3a7'); return; }
+  // toggle3D works in both build and play mode
   mode3d = !mode3d;
   if (clipRecording && clipRecorder && clipRecorder.state === 'recording') {
     try { clipRecorder.stop(); } catch(e){}
