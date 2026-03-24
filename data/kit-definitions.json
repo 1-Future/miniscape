@@ -1,0 +1,1649 @@
+[
+  {
+    "kitId": 0,
+    "bodyPart": 0,
+    "bodyPartName": "HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 63"
+  },
+  {
+    "kitId": 1,
+    "bodyPart": 0,
+    "bodyPartName": "HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 49"
+  },
+  {
+    "kitId": 2,
+    "bodyPart": 0,
+    "bodyPartName": "HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 52"
+  },
+  {
+    "kitId": 3,
+    "bodyPart": 0,
+    "bodyPartName": "HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 55"
+  },
+  {
+    "kitId": 4,
+    "bodyPart": 0,
+    "bodyPartName": "HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 59"
+  },
+  {
+    "kitId": 5,
+    "bodyPart": 0,
+    "bodyPartName": "HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 53"
+  },
+  {
+    "kitId": 6,
+    "bodyPart": 0,
+    "bodyPartName": "HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 67"
+  },
+  {
+    "kitId": 7,
+    "bodyPart": 0,
+    "bodyPartName": "HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 46"
+  },
+  {
+    "kitId": 8,
+    "bodyPart": 0,
+    "bodyPartName": "HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 45"
+  },
+  {
+    "kitId": 10,
+    "bodyPart": 1,
+    "bodyPartName": "JAW",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 81"
+  },
+  {
+    "kitId": 11,
+    "bodyPart": 1,
+    "bodyPartName": "JAW",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 82"
+  },
+  {
+    "kitId": 12,
+    "bodyPart": 1,
+    "bodyPartName": "JAW",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 83"
+  },
+  {
+    "kitId": 13,
+    "bodyPart": 1,
+    "bodyPartName": "JAW",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 79"
+  },
+  {
+    "kitId": 14,
+    "bodyPart": 1,
+    "bodyPartName": "JAW",
+    "modelIds": [
+      246
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 15,
+    "bodyPart": 1,
+    "bodyPartName": "JAW",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 80"
+  },
+  {
+    "kitId": 16,
+    "bodyPart": 1,
+    "bodyPartName": "JAW",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 85"
+  },
+  {
+    "kitId": 17,
+    "bodyPart": 1,
+    "bodyPartName": "JAW",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 84"
+  },
+  {
+    "kitId": 18,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28515
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 19,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28515,
+      322
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 20,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28515,
+      326
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 21,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28515,
+      320
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 22,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28515,
+      327
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 23,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28515,
+      324
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 24,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28551
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 25,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28582
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 26,
+    "bodyPart": 3,
+    "bodyPartName": "ARMS",
+    "modelIds": [
+      26632
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 27,
+    "bodyPart": 3,
+    "bodyPartName": "ARMS",
+    "modelIds": [
+      26634
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 28,
+    "bodyPart": 3,
+    "bodyPartName": "ARMS",
+    "modelIds": [
+      26619
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 29,
+    "bodyPart": 3,
+    "bodyPartName": "ARMS",
+    "modelIds": [
+      26630
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 30,
+    "bodyPart": 3,
+    "bodyPartName": "ARMS",
+    "modelIds": [
+      27154
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 31,
+    "bodyPart": 3,
+    "bodyPartName": "ARMS",
+    "modelIds": [
+      26618
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 32,
+    "bodyPart": 3,
+    "bodyPartName": "ARMS",
+    "modelIds": [
+      28342
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 33,
+    "bodyPart": 4,
+    "bodyPartName": "HANDS",
+    "modelIds": [
+      176
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 34,
+    "bodyPart": 4,
+    "bodyPartName": "HANDS",
+    "modelIds": [
+      10218
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 35,
+    "bodyPart": 4,
+    "bodyPartName": "HANDS",
+    "modelIds": [
+      176
+    ],
+    "selectable": false,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 36,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28285
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 37,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28337
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 38,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      27639
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 39,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28346
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 40,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28212
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 41,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28336
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 42,
+    "bodyPart": 6,
+    "bodyPartName": "FEET",
+    "modelIds": [
+      181
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 43,
+    "bodyPart": 6,
+    "bodyPartName": "FEET",
+    "modelIds": [
+      183
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 44,
+    "bodyPart": 6,
+    "bodyPartName": "FEET",
+    "modelIds": [
+      183
+    ],
+    "selectable": false,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 45,
+    "bodyPart": 7,
+    "bodyPartName": "F_HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 120"
+  },
+  {
+    "kitId": 46,
+    "bodyPart": 7,
+    "bodyPartName": "F_HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 103"
+  },
+  {
+    "kitId": 47,
+    "bodyPart": 7,
+    "bodyPartName": "F_HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 110"
+  },
+  {
+    "kitId": 48,
+    "bodyPart": 7,
+    "bodyPartName": "F_HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 113"
+  },
+  {
+    "kitId": 49,
+    "bodyPart": 7,
+    "bodyPartName": "F_HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 115"
+  },
+  {
+    "kitId": 50,
+    "bodyPart": 7,
+    "bodyPartName": "F_HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 118"
+  },
+  {
+    "kitId": 51,
+    "bodyPart": 7,
+    "bodyPartName": "F_HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 114"
+  },
+  {
+    "kitId": 52,
+    "bodyPart": 7,
+    "bodyPartName": "F_HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 125"
+  },
+  {
+    "kitId": 53,
+    "bodyPart": 7,
+    "bodyPartName": "F_HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 105"
+  },
+  {
+    "kitId": 54,
+    "bodyPart": 7,
+    "bodyPartName": "F_HEAD",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 104"
+  },
+  {
+    "kitId": 56,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      18554
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 57,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      15945
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 58,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      15939
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 59,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      18914
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 60,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      18560
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 61,
+    "bodyPart": 10,
+    "bodyPartName": "F_ARMS",
+    "modelIds": [
+      3476
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 62,
+    "bodyPart": 10,
+    "bodyPartName": "F_ARMS",
+    "modelIds": [
+      10685
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 63,
+    "bodyPart": 10,
+    "bodyPartName": "F_ARMS",
+    "modelIds": [
+      10692
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 64,
+    "bodyPart": 10,
+    "bodyPartName": "F_ARMS",
+    "modelIds": [
+      3848
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 65,
+    "bodyPart": 10,
+    "bodyPartName": "F_ARMS",
+    "modelIds": [
+      487
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 66,
+    "bodyPart": 10,
+    "bodyPartName": "F_ARMS",
+    "modelIds": [
+      28364
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 67,
+    "bodyPart": 11,
+    "bodyPartName": "F_HANDS",
+    "modelIds": [
+      353
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 68,
+    "bodyPart": 11,
+    "bodyPartName": "F_HANDS",
+    "modelIds": [
+      10706
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 69,
+    "bodyPart": 11,
+    "bodyPartName": "F_HANDS",
+    "modelIds": [
+      353
+    ],
+    "selectable": false,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 70,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      14423
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 71,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      433
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 72,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      15925
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 73,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      14421
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 74,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      14397
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 75,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      14424
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 76,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      14395
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 77,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      429
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 78,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      28358
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 79,
+    "bodyPart": 13,
+    "bodyPartName": "F_FEET",
+    "modelIds": [
+      358
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 80,
+    "bodyPart": 13,
+    "bodyPartName": "F_FEET",
+    "modelIds": [
+      360
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 81,
+    "bodyPart": 13,
+    "bodyPartName": "F_FEET",
+    "modelIds": [
+      360
+    ],
+    "selectable": false,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 82,
+    "bodyPart": 6,
+    "bodyPartName": "FEET",
+    "modelIds": [
+      7117
+    ],
+    "selectable": false,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 83,
+    "bodyPart": 13,
+    "bodyPartName": "F_FEET",
+    "modelIds": [
+      7118
+    ],
+    "selectable": false,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 84,
+    "bodyPart": 3,
+    "bodyPartName": "ARMS",
+    "modelIds": [
+      28345
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 85,
+    "bodyPart": 3,
+    "bodyPartName": "ARMS",
+    "modelIds": [
+      28343
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 86,
+    "bodyPart": 3,
+    "bodyPartName": "ARMS",
+    "modelIds": [
+      28340
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 87,
+    "bodyPart": 3,
+    "bodyPartName": "ARMS",
+    "modelIds": [
+      28344
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 88,
+    "bodyPart": 3,
+    "bodyPartName": "ARMS",
+    "modelIds": [
+      28341
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 89,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      28375
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 90,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      28372
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 91,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      28370
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 92,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      28371
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 93,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      18555
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 94,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      18559
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 95,
+    "bodyPart": 10,
+    "bodyPartName": "F_ARMS",
+    "modelIds": [
+      28365
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 96,
+    "bodyPart": 10,
+    "bodyPartName": "F_ARMS",
+    "modelIds": [
+      28368
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 97,
+    "bodyPart": 10,
+    "bodyPartName": "F_ARMS",
+    "modelIds": [
+      28366
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 98,
+    "bodyPart": 10,
+    "bodyPartName": "F_ARMS",
+    "modelIds": [
+      28367
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 99,
+    "bodyPart": 10,
+    "bodyPartName": "F_ARMS",
+    "modelIds": [
+      28369
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 100,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28512
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 101,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28349
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 102,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28335
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 103,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28338
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 104,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28436
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 105,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28581
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 106,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28719
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 107,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28519
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 108,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28714
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 109,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28786
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 110,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28554
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 135,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      28362
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 136,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      28360
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 137,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      28361
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 138,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      28357
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 139,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      28363
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 140,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      28359
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 248,
+    "bodyPart": 10,
+    "bodyPartName": "F_ARMS",
+    "modelIds": [
+      2732
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 249,
+    "bodyPart": 10,
+    "bodyPartName": "F_ARMS",
+    "modelIds": [
+      10482
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 250,
+    "bodyPart": 10,
+    "bodyPartName": "F_ARMS",
+    "modelIds": [
+      482
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 251,
+    "bodyPart": 10,
+    "bodyPartName": "F_ARMS",
+    "modelIds": [
+      498
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 252,
+    "bodyPart": 10,
+    "bodyPartName": "F_ARMS",
+    "modelIds": [
+      484
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 253,
+    "bodyPart": 10,
+    "bodyPartName": "F_ARMS",
+    "modelIds": [
+      480
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 254,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28774
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 255,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28550
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 256,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28650
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 257,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28548
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 258,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28586
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 259,
+    "bodyPart": 2,
+    "bodyPartName": "TORSO",
+    "modelIds": [
+      28547
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 260,
+    "bodyPart": 3,
+    "bodyPartName": "ARMS",
+    "modelIds": [
+      27139
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 261,
+    "bodyPart": 3,
+    "bodyPartName": "ARMS",
+    "modelIds": [
+      26644
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 262,
+    "bodyPart": 3,
+    "bodyPartName": "ARMS",
+    "modelIds": [
+      27140
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 263,
+    "bodyPart": 3,
+    "bodyPartName": "ARMS",
+    "modelIds": [
+      26616
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 264,
+    "bodyPart": 3,
+    "bodyPartName": "ARMS",
+    "modelIds": [
+      26633
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 265,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      18914,
+      15936
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 266,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      18914,
+      15937
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 267,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      18914,
+      15934
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 268,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      18914,
+      15927
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 269,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      18914,
+      15931
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 270,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      15944
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 271,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      18346
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 272,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      18557
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 273,
+    "bodyPart": 9,
+    "bodyPartName": "F_TORSO",
+    "modelIds": [
+      18553
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 274,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      14396
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 275,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      14422
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 276,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      14425
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 277,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      14398
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 278,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      11024
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 279,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      14426
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 280,
+    "bodyPart": 12,
+    "bodyPartName": "F_LEGS",
+    "modelIds": [
+      15926
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 281,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      27623
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 282,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      27563
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 283,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      27610
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 284,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28373
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 285,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28449
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 286,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28220
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 287,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28348
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 288,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28347
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 289,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28374
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 290,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28339
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 291,
+    "bodyPart": 5,
+    "bodyPartName": "LEGS",
+    "modelIds": [
+      28334
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 292,
+    "bodyPart": 8,
+    "bodyPartName": "F_JAW",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 81"
+  },
+  {
+    "kitId": 293,
+    "bodyPart": 8,
+    "bodyPartName": "F_JAW",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 82"
+  },
+  {
+    "kitId": 294,
+    "bodyPart": 8,
+    "bodyPartName": "F_JAW",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 83"
+  },
+  {
+    "kitId": 295,
+    "bodyPart": 8,
+    "bodyPartName": "F_JAW",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 79"
+  },
+  {
+    "kitId": 296,
+    "bodyPart": 8,
+    "bodyPartName": "F_JAW",
+    "modelIds": [
+      437
+    ],
+    "selectable": true,
+    "recolorCount": 0
+  },
+  {
+    "kitId": 297,
+    "bodyPart": 8,
+    "bodyPartName": "F_JAW",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 80"
+  },
+  {
+    "kitId": 298,
+    "bodyPart": 8,
+    "bodyPartName": "F_JAW",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 85"
+  },
+  {
+    "kitId": 299,
+    "bodyPart": 8,
+    "bodyPartName": "F_JAW",
+    "chatheadModelIds": [],
+    "selectable": true,
+    "recolorCount": 0,
+    "parseError": "unknown opcode 84"
+  }
+]

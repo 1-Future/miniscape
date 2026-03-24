@@ -1052,6 +1052,118 @@
     margin-bottom: 8px;
   }
 
+  /* ── Character Creation Screen ─────────────────────────────────── */
+  #chargen-screen {
+    position: fixed; inset: 0; z-index: 490;
+    background: #0a0a08;
+    display: none; align-items: center; justify-content: center;
+    font-family: 'Courier New', monospace;
+  }
+  #chargen-screen::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 40%, rgba(40,30,10,0.4) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  #chargen-box {
+    position: relative; z-index: 1;
+    background: rgba(26, 21, 16, 0.97); border: 2px solid #5a4a35;
+    padding: 0; width: 640px; max-width: 95vw;
+    box-shadow: 0 0 80px rgba(0,0,0,0.7), inset 0 0 40px rgba(0,0,0,0.3);
+  }
+  #chargen-box::after {
+    content: ''; position: absolute; inset: 4px; border: 1px solid rgba(90,74,53,0.3);
+    pointer-events: none;
+  }
+  #chargen-title {
+    text-align: center; padding: 14px 0 4px;
+    font: bold 20px 'Courier New', monospace; color: #d4981f;
+    letter-spacing: 4px; text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  }
+  #chargen-body {
+    display: flex; gap: 0; padding: 8px 16px 16px;
+  }
+  .chargen-col {
+    flex: 1; display: flex; flex-direction: column; gap: 6px;
+  }
+  .chargen-col h3 {
+    font: bold 11px 'Courier New', monospace; color: #d4981f;
+    text-align: center; margin: 0 0 4px; letter-spacing: 2px;
+    border-bottom: 1px solid #3a3020; padding-bottom: 4px;
+  }
+  .chargen-slot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 3px 6px; gap: 4px;
+  }
+  .chargen-slot label {
+    font: 11px 'Courier New', monospace; color: #b0a080;
+    min-width: 50px;
+  }
+  .chargen-slot .slot-arrows {
+    display: flex; align-items: center; gap: 2px;
+  }
+  .chargen-slot .slot-arrows button {
+    width: 22px; height: 22px; background: #2a2520; border: 1px solid #5a4a35;
+    color: #d4981f; font: bold 14px sans-serif; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .chargen-slot .slot-arrows button:hover { background: #3a3530; }
+  .chargen-slot .slot-val {
+    font: bold 12px 'Courier New', monospace; color: #e8d8b0;
+    min-width: 24px; text-align: center;
+  }
+  .chargen-preview {
+    flex: 1.2; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 280px; position: relative;
+  }
+  #chargen-3d-wrap {
+    width: 200px; height: 260px; border: 1px solid #3a3020; background: #0e0d0b;
+    position: relative; cursor: grab;
+  }
+  #chargen-3d-wrap:active { cursor: grabbing; }
+  #chargen-3d-canvas {
+    width: 100%; height: 100%;
+  }
+  .chargen-color-row {
+    display: flex; align-items: center; gap: 6px; padding: 2px 6px;
+  }
+  .chargen-color-row label {
+    font: 11px 'Courier New', monospace; color: #b0a080; min-width: 42px;
+  }
+  .chargen-color-row input[type="color"] {
+    width: 28px; height: 22px; border: 1px solid #5a4a35; padding: 0;
+    cursor: pointer; background: #2a2520;
+  }
+  #chargen-body-type {
+    display: flex; gap: 4px; justify-content: center; padding: 4px 0;
+  }
+  #chargen-body-type button {
+    padding: 5px 18px; background: #2a2520; border: 1px solid #5a4a35;
+    color: #b0a080; font: bold 12px 'Courier New', monospace; cursor: pointer;
+    transition: all 0.15s;
+  }
+  #chargen-body-type button.active {
+    background: #3a3020; color: #d4981f; border-color: #d4981f;
+    box-shadow: 0 0 8px rgba(212,152,31,0.3);
+  }
+  #chargen-confirm {
+    display: block; width: calc(100% - 32px); margin: 0 16px 16px;
+    padding: 10px; background: #2a4a20; border: 2px solid #4a8a35;
+    color: #d4f0c0; font: bold 14px 'Courier New', monospace;
+    cursor: pointer; letter-spacing: 2px;
+    transition: all 0.2s;
+  }
+  #chargen-confirm:hover {
+    background: #3a6a30; box-shadow: 0 0 16px rgba(74,138,53,0.4);
+  }
+  #chargen-randomize {
+    display: block; width: calc(100% - 32px); margin: 0 16px 8px;
+    padding: 6px; background: #2a2530; border: 1px solid #5a4a6a;
+    color: #c0b0d0; font: 11px 'Courier New', monospace;
+    cursor: pointer; letter-spacing: 1px;
+  }
+  #chargen-randomize:hover { background: #3a3540; }
+
   /* ── Login Screen ────────────────────────────────────────────────── */
   #login-screen {
     position: fixed; inset: 0; z-index: 500;
@@ -1296,6 +1408,110 @@
   </div>
 </div>
 
+<!-- Character Creation Screen -->
+<div id="chargen-screen">
+  <div id="chargen-box">
+    <div id="chargen-title">CHARACTER CREATION</div>
+    <div id="chargen-body">
+      <div class="chargen-col">
+        <h3>DESIGN</h3>
+        <div class="chargen-slot" data-slot="head">
+          <label>Head</label>
+          <div class="slot-arrows">
+            <button onclick="chargenCycle('head',-1)">◀</button>
+            <span class="slot-val" id="cg-head-val">1/9</span>
+            <button onclick="chargenCycle('head',1)">▶</button>
+          </div>
+        </div>
+        <div class="chargen-slot" data-slot="jaw">
+          <label>Jaw</label>
+          <div class="slot-arrows">
+            <button onclick="chargenCycle('jaw',-1)">◀</button>
+            <span class="slot-val" id="cg-jaw-val">1</span>
+            <button onclick="chargenCycle('jaw',1)">▶</button>
+          </div>
+        </div>
+        <div class="chargen-slot" data-slot="torso">
+          <label>Torso</label>
+          <div class="slot-arrows">
+            <button onclick="chargenCycle('torso',-1)">◀</button>
+            <span class="slot-val" id="cg-torso-val">1</span>
+            <button onclick="chargenCycle('torso',1)">▶</button>
+          </div>
+        </div>
+        <div class="chargen-slot" data-slot="arms">
+          <label>Arms</label>
+          <div class="slot-arrows">
+            <button onclick="chargenCycle('arms',-1)">◀</button>
+            <span class="slot-val" id="cg-arms-val">1</span>
+            <button onclick="chargenCycle('arms',1)">▶</button>
+          </div>
+        </div>
+        <div class="chargen-slot" data-slot="hands">
+          <label>Hands</label>
+          <div class="slot-arrows">
+            <button onclick="chargenCycle('hands',-1)">◀</button>
+            <span class="slot-val" id="cg-hands-val">1</span>
+            <button onclick="chargenCycle('hands',1)">▶</button>
+          </div>
+        </div>
+        <div class="chargen-slot" data-slot="legs">
+          <label>Legs</label>
+          <div class="slot-arrows">
+            <button onclick="chargenCycle('legs',-1)">◀</button>
+            <span class="slot-val" id="cg-legs-val">1</span>
+            <button onclick="chargenCycle('legs',1)">▶</button>
+          </div>
+        </div>
+        <div class="chargen-slot" data-slot="feet">
+          <label>Feet</label>
+          <div class="slot-arrows">
+            <button onclick="chargenCycle('feet',-1)">◀</button>
+            <span class="slot-val" id="cg-feet-val">1</span>
+            <button onclick="chargenCycle('feet',1)">▶</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="chargen-preview">
+        <div id="chargen-3d-wrap">
+          <canvas id="chargen-3d-canvas"></canvas>
+        </div>
+        <div id="chargen-body-type">
+          <button class="active" onclick="chargenSetBody('A')">Body A</button>
+          <button onclick="chargenSetBody('B')">Body B</button>
+        </div>
+      </div>
+
+      <div class="chargen-col">
+        <h3>COLOUR</h3>
+        <div class="chargen-color-row">
+          <label>Hair</label>
+          <input type="color" id="cg-hair-color" value="#6B3A2A" oninput="chargenUpdatePreview()">
+        </div>
+        <div class="chargen-color-row">
+          <label>Torso</label>
+          <input type="color" id="cg-torso-color" value="#8B7355" oninput="chargenUpdatePreview()">
+        </div>
+        <div class="chargen-color-row">
+          <label>Legs</label>
+          <input type="color" id="cg-legs-color" value="#4A5568" oninput="chargenUpdatePreview()">
+        </div>
+        <div class="chargen-color-row">
+          <label>Feet</label>
+          <input type="color" id="cg-feet-color" value="#5C4033" oninput="chargenUpdatePreview()">
+        </div>
+        <div class="chargen-color-row">
+          <label>Skin</label>
+          <input type="color" id="cg-skin-color" value="#D4A574" oninput="chargenUpdatePreview()">
+        </div>
+      </div>
+    </div>
+    <button id="chargen-randomize" onclick="chargenRandomize()">RANDOMIZE</button>
+    <button id="chargen-confirm" onclick="chargenConfirm()">CONFIRM</button>
+  </div>
+</div>
+
 <!-- World Selector -->
 <div id="world-selector">
   <div id="world-header">
@@ -1413,6 +1629,7 @@
     <div class="tab-icon" data-tab="prayer" title="Prayer">&#10022;</div>
     <div class="tab-icon" data-tab="magic" title="Magic">&#10038;</div>
     <div class="tab-icon" data-tab="friends" title="Friends">&#9829;</div>
+    <div class="tab-icon" data-tab="account" title="Account">&#9881;</div>
   </div>
   <div id="tab-content">
     <div id="tab-combat" class="tab-pane active">
@@ -1440,7 +1657,11 @@
     </div>
     <div id="tab-prayer" class="tab-pane">
       <h3>Prayer</h3>
-      <div class="placeholder-text">No prayers yet.</div>
+      <div id="prayer-grid" style="display:flex; gap:6px; flex-wrap:wrap; padding:4px;">
+        <button class="prayer-btn" data-prayer="melee" title="Protect from Melee" style="width:48px;height:48px;font-size:22px;background:#1a1a1a;border:2px solid #444;color:#ccc;cursor:pointer;border-radius:4px;">&#9876;</button>
+        <button class="prayer-btn" data-prayer="ranged" title="Protect from Ranged" style="width:48px;height:48px;font-size:22px;background:#1a1a1a;border:2px solid #444;color:#ccc;cursor:pointer;border-radius:4px;">&#127993;</button>
+        <button class="prayer-btn" data-prayer="magic" title="Protect from Magic" style="width:48px;height:48px;font-size:22px;background:#1a1a1a;border:2px solid #444;color:#ccc;cursor:pointer;border-radius:4px;">&#10026;</button>
+      </div>
     </div>
     <div id="tab-magic" class="tab-pane">
       <h3>Magic</h3>
@@ -1457,6 +1678,18 @@
       <div style="margin-top:12px;border-top:1px solid var(--panel-border);padding-top:8px;">
         <h3 style="font-size:12px;margin-bottom:4px;">Online</h3>
         <div id="online-players-list" style="font-size:11px;color:#aaa;"></div>
+      </div>
+    </div>
+    <div id="tab-account" class="tab-pane">
+      <h3>Account</h3>
+      <div style="margin:8px 0;">
+        <label style="color:#aaa;font-size:11px;">Account Type</label>
+        <div id="gear-tier-select" style="display:flex;gap:4px;margin-top:4px;">
+          <button class="tier-btn" data-tier="1" style="flex:1;padding:6px;font:bold 11px monospace;background:#1a1a1a;border:2px solid #444;color:#cd7f32;cursor:pointer;border-radius:3px;">T1<br><span style="font-size:9px;font-weight:normal;">Bronze</span></button>
+          <button class="tier-btn" data-tier="2" style="flex:1;padding:6px;font:bold 11px monospace;background:#1a1a1a;border:2px solid #444;color:#a8a8a8;cursor:pointer;border-radius:3px;">T2<br><span style="font-size:9px;font-weight:normal;">Iron</span></button>
+          <button class="tier-btn active-tier" data-tier="3" style="flex:1;padding:6px;font:bold 11px monospace;background:#2a2a1a;border:2px solid #c8a84e;color:#c8a84e;cursor:pointer;border-radius:3px;">T3<br><span style="font-size:9px;font-weight:normal;">Steel+</span></button>
+        </div>
+        <div style="color:#666;font-size:10px;margin-top:4px;">Restricts max equippable gear tier. Lower = harder.</div>
       </div>
     </div>
   </div>
@@ -1670,6 +1903,24 @@ function initPanelSystem() {
     btn.textContent = `Auto Retaliate: ${autoRetaliateOn ? 'ON' : 'OFF'}`;
     btn.style.background = autoRetaliateOn ? '#3a3' : '#a33';
     sendMsg({ t: 'autoRetaliate' });
+  });
+
+  // Prayer buttons
+  document.querySelectorAll('.prayer-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      sendMsg({ t: 'toggle_prayer', v: btn.dataset.prayer });
+    });
+  });
+
+  // Gear tier buttons (visual shell only — no server interaction yet)
+  document.querySelectorAll('.tier-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      // TODO: wire up when gear system exists
+    });
   });
 
   // Chat tab switching
@@ -3957,6 +4208,38 @@ let groundItemList = [];
 let openDoorList = [];
 let connected = false;
 
+// Wall textures: per-tile texture for wall rendering
+const wallTexMap = new Map(); // "layer_x_y" → "type_variant" (e.g. "6_2" for T.WALL brick)
+let selectedWallTex = { type: 6, variant: 0 }; // T.WALL, White Plaster
+function getWallTex(x, y, layer) { return wallTexMap.get(`${layer !== undefined ? layer : currentLayer}_${x}_${y}`) || `${selectedWallTex.type}_${selectedWallTex.variant}`; }
+function setWallTex(x, y, tex) {
+  const key = `${currentLayer}_${x}_${y}`;
+  if (!tex) wallTexMap.delete(key);
+  else wallTexMap.set(key, tex);
+}
+// Get average color from a texture canvas (for wall coloring)
+const _wallTexColorCache = {};
+function getWallTexColor(texKey) {
+  if (_wallTexColorCache[texKey]) return _wallTexColorCache[texKey];
+  const canvas = tileTexCanvases[texKey];
+  if (!canvas) return { r: 0.85, g: 0.83, b: 0.80 };
+  const ctx = canvas.getContext('2d');
+  const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  let tr = 0, tg = 0, tb = 0;
+  const px = canvas.width * canvas.height;
+  for (let i = 0; i < img.data.length; i += 4) {
+    tr += img.data[i]; tg += img.data[i+1]; tb += img.data[i+2];
+  }
+  const c = { r: tr / px / 255, g: tg / px / 255, b: tb / px / 255 };
+  _wallTexColorCache[texKey] = c;
+  return c;
+}
+function getWallTexHex(texKey) {
+  const c = getWallTexColor(texKey);
+  const toHex = v => Math.round(v * 255).toString(16).padStart(2, '0');
+  return '#' + toHex(c.r) + toHex(c.g) + toHex(c.b);
+}
+
 // Wall edges: stored per tile as bitmask (N=1, E=2, S=4, W=8)
 const wallEdges = new Map(); // "layer_x_y" → bitmask
 function getWallEdge(x, y) { return wallEdges.get(`${currentLayer}_${x}_${y}`) || 0; }
@@ -3978,6 +4261,12 @@ function toggleWallEdge(x, y, side) {
   }
   setWallEdge(x, y, newWallMask);
   sendMsg({ t: 'wall_edge', x, y, mask: newWallMask });
+  // Set wall texture when adding walls
+  if (newWallMask > 0 && newWallMask > oldWallMask) {
+    const texKey = `${selectedWallTex.type}_${selectedWallTex.variant}`;
+    setWallTex(x, y, texKey);
+    sendMsg({ t: 'wall_tex', x, y, tex: texKey });
+  }
   undoOps.push({ type: 'wall', x, y, oldMask: oldWallMask, newMask: newWallMask });
   undoStack.push(undoOps);
   if (undoStack.length > MAX_UNDO) undoStack.shift();
@@ -4376,6 +4665,367 @@ document.getElementById('login-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') doLogin();
 });
 
+// ── Character Creation ──────────────────────────────────────────────────────────
+// Kit model map from OSRS cache dump — kitModels[bodyType][slot] = array of model name arrays
+const KIT_MODELS = {"A":{"HEAD":[["kit_model_230"],["kit_model_232"],["kit_model_234"],["kit_model_236"],["kit_model_238"],["kit_model_240"],["kit_model_242"],["kit_model_244"],["kit_model_248"]],"TORSO":[["kit_model_28515"],["kit_model_28515","kit_model_322"],["kit_model_28515","kit_model_326"],["kit_model_28515","kit_model_320"],["kit_model_28515","kit_model_327"],["kit_model_28515","kit_model_324"],["kit_model_28551"],["kit_model_28582"],["kit_model_28581"],["kit_model_28719"],["kit_model_28519"],["kit_model_28714"],["kit_model_28786"],["kit_model_28554"],["kit_model_28774"],["kit_model_28550"],["kit_model_28650"],["kit_model_28548"],["kit_model_28586"],["kit_model_28547"]],"ARMS":[["kit_model_26632"],["kit_model_26634"],["kit_model_26619"],["kit_model_26630"],["kit_model_27154"],["kit_model_26618"],["kit_model_28342"],["kit_model_28345"],["kit_model_28343"],["kit_model_28340"],["kit_model_28344"],["kit_model_28341"],["kit_model_27139"],["kit_model_26644"],["kit_model_27140"],["kit_model_26616"],["kit_model_26633"]],"HANDS":[["kit_model_176"],["kit_model_10218"]],"LEGS":[["kit_model_28285"],["kit_model_28337"],["kit_model_27639"],["kit_model_28346"],["kit_model_28212"],["kit_model_28336"],["kit_model_28512"],["kit_model_28349"],["kit_model_28335"],["kit_model_28338"],["kit_model_28436"],["kit_model_27623"],["kit_model_27563"],["kit_model_27610"],["kit_model_28373"],["kit_model_28449"],["kit_model_28220"],["kit_model_28348"],["kit_model_28347"],["kit_model_28374"],["kit_model_28339"],["kit_model_28334"]],"FEET":[["kit_model_181"],["kit_model_183"]],"JAW":[["kit_model_246"]]},"B":{"HEAD":[["kit_model_217"],["kit_model_219"],["kit_model_221"],["kit_model_223"],["kit_model_225"],["kit_model_227"],["kit_model_229"],["kit_model_231"],["kit_model_233"]],"TORSO":[["kit_model_18554"],["kit_model_15945"],["kit_model_15939"],["kit_model_18914"],["kit_model_18560"],["kit_model_28375"],["kit_model_28372"],["kit_model_28370"],["kit_model_28371"],["kit_model_18555"],["kit_model_18559"],["kit_model_18914","kit_model_15936"],["kit_model_18914","kit_model_15937"],["kit_model_18914","kit_model_15934"],["kit_model_18914","kit_model_15927"],["kit_model_18914","kit_model_15931"],["kit_model_15944"],["kit_model_18346"],["kit_model_18557"],["kit_model_18553"]],"ARMS":[["kit_model_3476"],["kit_model_10685"],["kit_model_10692"],["kit_model_3848"],["kit_model_487"],["kit_model_28364"],["kit_model_28365"],["kit_model_28368"],["kit_model_28366"],["kit_model_28367"],["kit_model_28369"],["kit_model_2732"],["kit_model_10482"],["kit_model_482"],["kit_model_498"],["kit_model_484"],["kit_model_480"]],"HANDS":[["kit_model_353"],["kit_model_10706"]],"LEGS":[["kit_model_14423"],["kit_model_433"],["kit_model_15925"],["kit_model_14421"],["kit_model_14397"],["kit_model_14424"],["kit_model_14395"],["kit_model_429"],["kit_model_28358"],["kit_model_28362"],["kit_model_28360"],["kit_model_28361"],["kit_model_28357"],["kit_model_28363"],["kit_model_28359"],["kit_model_14396"],["kit_model_14422"],["kit_model_14425"],["kit_model_14398"],["kit_model_11024"],["kit_model_14426"],["kit_model_15926"]],"FEET":[["kit_model_358"],["kit_model_360"]],"JAW":[["kit_model_437"]]}};
+
+// Derive slot counts from kit data
+function getSlotCount(bodyType, slot) {
+  const upper = slot.toUpperCase();
+  return (KIT_MODELS[bodyType] && KIT_MODELS[bodyType][upper]) ? KIT_MODELS[bodyType][upper].length : 1;
+}
+
+const CHARGEN_SLOTS = {
+  head: { label: 'Head' },
+  jaw: { label: 'Jaw' },
+  torso: { label: 'Torso' },
+  arms: { label: 'Arms' },
+  hands: { label: 'Hands' },
+  legs: { label: 'Legs' },
+  feet: { label: 'Feet' },
+};
+
+const chargenState = {
+  bodyType: 'A',
+  head: 0, jaw: 0, torso: 0, arms: 0, hands: 0, legs: 0, feet: 0,
+  hairColor: '#6B3A2A', torsoColor: '#8B7355', legsColor: '#4A5568',
+  feetColor: '#5C4033', skinColor: '#D4A574',
+};
+
+// Chargen 3D preview
+let cgScene, cgCamera, cgRenderer, cgModel, cgAnimId;
+let cgRotation = 0, cgDragging = false, cgLastX = 0;
+
+function initChargen3D() {
+  if (cgScene) return; // already init
+  const wrap = document.getElementById('chargen-3d-wrap');
+  const canvas = document.getElementById('chargen-3d-canvas');
+  const w = 200, h = 260;
+
+  cgScene = new THREE.Scene();
+  cgScene.background = new THREE.Color(0x0e0d0b);
+
+  cgCamera = new THREE.PerspectiveCamera(35, w / h, 0.1, 50);
+  cgCamera.position.set(0, 1.0, 3.5);
+  cgCamera.lookAt(0, 0.7, 0);
+
+  cgRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  cgRenderer.setSize(w, h);
+  cgRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  // Lighting — warm key, cool fill
+  const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+  cgScene.add(ambient);
+  const key = new THREE.DirectionalLight(0xfff4e0, 1.0);
+  key.position.set(2, 3, 2);
+  cgScene.add(key);
+  const fill = new THREE.DirectionalLight(0x8888cc, 0.4);
+  fill.position.set(-2, 1, -1);
+  cgScene.add(fill);
+
+  // Ground circle
+  const groundGeo = new THREE.CircleGeometry(0.8, 32);
+  const groundMat = new THREE.MeshLambertMaterial({ color: 0x1a1815 });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -0.01;
+  cgScene.add(ground);
+
+  // Drag to rotate
+  wrap.addEventListener('mousedown', (e) => { cgDragging = true; cgLastX = e.clientX; });
+  window.addEventListener('mousemove', (e) => {
+    if (!cgDragging) return;
+    cgRotation += (e.clientX - cgLastX) * 0.01;
+    cgLastX = e.clientX;
+  });
+  window.addEventListener('mouseup', () => { cgDragging = false; });
+}
+
+function chargenAnimate() {
+  if (!document.getElementById('chargen-screen').style.display ||
+      document.getElementById('chargen-screen').style.display === 'none') {
+    cgAnimId = null;
+    return;
+  }
+  cgAnimId = requestAnimationFrame(chargenAnimate);
+
+  // Auto-rotate slowly when not dragging
+  if (!cgDragging) cgRotation += 0.005;
+  if (cgModel) cgModel.rotation.y = cgRotation;
+
+  cgRenderer.render(cgScene, cgCamera);
+}
+
+function showChargen() {
+  document.getElementById('chargen-screen').style.display = 'flex';
+  initChargen3D();
+  chargenLoadModel();
+  if (!cgAnimId) chargenAnimate();
+}
+
+function hideChargen() {
+  document.getElementById('chargen-screen').style.display = 'none';
+}
+
+function chargenCycle(slot, dir) {
+  const count = getSlotCount(chargenState.bodyType, slot);
+  chargenState[slot] = ((chargenState[slot] + dir) % count + count) % count;
+  document.getElementById('cg-' + slot + '-val').textContent = (chargenState[slot] + 1) + '/' + count;
+  chargenLoadModel();
+}
+
+function chargenSetBody(type) {
+  chargenState.bodyType = type;
+  document.querySelectorAll('#chargen-body-type button').forEach(b => {
+    b.classList.toggle('active', b.textContent.includes(type));
+  });
+  chargenLoadModel(); // reload model for body type switch
+}
+
+function chargenRandomize() {
+  chargenState.bodyType = Math.random() > 0.5 ? 'B' : 'A';
+  for (const slot of Object.keys(CHARGEN_SLOTS)) {
+    const count = getSlotCount(chargenState.bodyType, slot);
+    chargenState[slot] = Math.floor(Math.random() * count);
+    document.getElementById('cg-' + slot + '-val').textContent = (chargenState[slot] + 1) + '/' + count;
+  }
+  chargenState.bodyType = Math.random() > 0.5 ? 'B' : 'A';
+  document.querySelectorAll('#chargen-body-type button').forEach(b => {
+    b.classList.toggle('active', b.textContent.includes(chargenState.bodyType));
+  });
+  // Random colors
+  const randColor = () => '#' + Array.from({length: 3}, () =>
+    Math.floor(40 + Math.random() * 180).toString(16).padStart(2, '0')).join('');
+  const skinTones = ['#F5D6B8','#D4A574','#C68642','#8D5524','#5C3A1E','#E8C4A0','#F0D5BE','#A0724A'];
+  chargenState.hairColor = randColor();
+  chargenState.torsoColor = randColor();
+  chargenState.legsColor = randColor();
+  chargenState.feetColor = randColor();
+  chargenState.skinColor = skinTones[Math.floor(Math.random() * skinTones.length)];
+  document.getElementById('cg-hair-color').value = chargenState.hairColor;
+  document.getElementById('cg-torso-color').value = chargenState.torsoColor;
+  document.getElementById('cg-legs-color').value = chargenState.legsColor;
+  document.getElementById('cg-feet-color').value = chargenState.feetColor;
+  document.getElementById('cg-skin-color').value = chargenState.skinColor;
+  chargenLoadModel(); // reload with new body type + colors
+}
+
+let cgLoadingCount = 0;
+const cgModelCache = {}; // name → THREE.Group (cached loaded models)
+
+function chargenLoadModel() {
+  if (!cgScene) return;
+  chargenSyncColors();
+
+  // Remove old model
+  if (cgModel) { cgScene.remove(cgModel); cgModel = null; }
+
+  const loader = gltfLoader || (typeof THREE !== 'undefined' && THREE.GLTFLoader ? new THREE.GLTFLoader() : null);
+  if (!loader) { chargenLoadFallback(); return; }
+
+  const bt = chargenState.bodyType;
+  const kits = KIT_MODELS[bt];
+  if (!kits) { chargenLoadFallback(); return; }
+
+  cgModel = new THREE.Group();
+  cgModel.rotation.y = cgRotation;
+  cgScene.add(cgModel);
+
+  const loadId = ++cgLoadingCount;
+  const slots = ['HEAD', 'TORSO', 'ARMS', 'HANDS', 'LEGS', 'FEET', 'JAW'];
+  const stateKeys = { HEAD: 'head', TORSO: 'torso', ARMS: 'arms', HANDS: 'hands', LEGS: 'legs', FEET: 'feet', JAW: 'jaw' };
+
+  for (const slot of slots) {
+    const options = kits[slot];
+    if (!options || options.length === 0) continue;
+
+    const idx = Math.min(chargenState[stateKeys[slot]] || 0, options.length - 1);
+    const modelNames = options[idx];
+
+    for (const modelName of modelNames) {
+      // Use cache to avoid re-fetching
+      if (cgModelCache[modelName]) {
+        if (cgLoadingCount !== loadId || !cgModel) continue;
+        const part = cgModelCache[modelName].clone();
+        part.userData.kitSlot = slot;
+        cgModel.add(part);
+      } else {
+        loader.load(`/models/${modelName}.gltf`, (gltf) => {
+          if (cgLoadingCount !== loadId || !cgModel) return;
+          const template = gltf.scene;
+          template.traverse(child => {
+            if (child.isMesh && child.geometry) child.geometry.computeVertexNormals();
+          });
+          cgModelCache[modelName] = template;
+          const part = template.clone();
+          part.userData.kitSlot = slot;
+          cgModel.add(part);
+        }, undefined, () => {});
+      }
+    }
+  }
+}
+
+function chargenSyncColors() {
+  chargenState.hairColor = document.getElementById('cg-hair-color').value;
+  chargenState.torsoColor = document.getElementById('cg-torso-color').value;
+  chargenState.legsColor = document.getElementById('cg-legs-color').value;
+  chargenState.feetColor = document.getElementById('cg-feet-color').value;
+  chargenState.skinColor = document.getElementById('cg-skin-color').value;
+}
+
+function chargenLoadFallback() {
+  // Fallback: build a simple humanoid from primitives
+  if (cgModel) cgScene.remove(cgModel);
+  cgModel = new THREE.Group();
+
+  const skin = new THREE.Color(chargenState.skinColor);
+  const torso = new THREE.Color(chargenState.torsoColor);
+  const legs = new THREE.Color(chargenState.legsColor);
+  const feet = new THREE.Color(chargenState.feetColor);
+  const hair = new THREE.Color(chargenState.hairColor);
+  const isB = chargenState.bodyType === 'B';
+
+  // Head
+  const headGeo = new THREE.BoxGeometry(0.28, 0.3, 0.28);
+  const headMat = new THREE.MeshLambertMaterial({ color: skin });
+  const head = new THREE.Mesh(headGeo, headMat);
+  head.position.y = 1.55;
+  cgModel.add(head);
+
+  // Hair
+  const hairGeo = new THREE.BoxGeometry(0.32, 0.12 + chargenState.head * 0.02, 0.32);
+  const hairMat = new THREE.MeshLambertMaterial({ color: hair });
+  const hairMesh = new THREE.Mesh(hairGeo, hairMat);
+  hairMesh.position.y = 1.75 + chargenState.head * 0.01;
+  cgModel.add(hairMesh);
+
+  // Jaw/beard (body A only)
+  if (chargenState.jaw > 0 && !isB) {
+    const jawGeo = new THREE.BoxGeometry(0.2, 0.06 + chargenState.jaw * 0.015, 0.22);
+    const jawMesh = new THREE.Mesh(jawGeo, new THREE.MeshLambertMaterial({ color: hair }));
+    jawMesh.position.y = 1.37;
+    jawMesh.position.z = 0.02;
+    cgModel.add(jawMesh);
+  }
+
+  // Torso
+  const tw = isB ? 0.32 : 0.36;
+  const torsoGeo = new THREE.BoxGeometry(tw, 0.45 + chargenState.torso * 0.02, 0.22);
+  const torsoMat = new THREE.MeshLambertMaterial({ color: torso });
+  const torsoMesh = new THREE.Mesh(torsoGeo, torsoMat);
+  torsoMesh.position.y = 1.1;
+  cgModel.add(torsoMesh);
+
+  // Arms
+  const armW = 0.08 + chargenState.arms * 0.01;
+  const armH = 0.4;
+  const armGeo = new THREE.BoxGeometry(armW, armH, 0.09);
+  const armMat = new THREE.MeshLambertMaterial({ color: torso });
+  const armL = new THREE.Mesh(armGeo, armMat);
+  armL.position.set(-tw/2 - armW/2, 1.08, 0);
+  cgModel.add(armL);
+  const armR = new THREE.Mesh(armGeo, armMat);
+  armR.position.set(tw/2 + armW/2, 1.08, 0);
+  cgModel.add(armR);
+
+  // Hands
+  const handGeo = new THREE.BoxGeometry(armW, 0.08 + chargenState.hands * 0.02, 0.09);
+  const handMat = new THREE.MeshLambertMaterial({ color: skin });
+  const handL = new THREE.Mesh(handGeo, handMat);
+  handL.position.set(-tw/2 - armW/2, 0.84, 0);
+  cgModel.add(handL);
+  const handR = new THREE.Mesh(handGeo, handMat);
+  handR.position.set(tw/2 + armW/2, 0.84, 0);
+  cgModel.add(handR);
+
+  // Legs
+  const legW = isB ? 0.12 : 0.14;
+  const legH = 0.4 + chargenState.legs * 0.015;
+  const legGeo = new THREE.BoxGeometry(legW, legH, 0.14);
+  const legMat = new THREE.MeshLambertMaterial({ color: legs });
+  const legL = new THREE.Mesh(legGeo, legMat);
+  legL.position.set(-0.08, 0.65 - chargenState.legs * 0.007, 0);
+  cgModel.add(legL);
+  const legR = new THREE.Mesh(legGeo, legMat);
+  legR.position.set(0.08, 0.65 - chargenState.legs * 0.007, 0);
+  cgModel.add(legR);
+
+  // Feet
+  const footD = 0.18 + chargenState.feet * 0.015;
+  const footGeo = new THREE.BoxGeometry(legW + 0.02, 0.06, footD);
+  const footMat = new THREE.MeshLambertMaterial({ color: feet });
+  const footL = new THREE.Mesh(footGeo, footMat);
+  footL.position.set(-0.08, 0.42 - chargenState.legs * 0.007, 0.03);
+  cgModel.add(footL);
+  const footR = new THREE.Mesh(footGeo, footMat);
+  footR.position.set(0.08, 0.42 - chargenState.legs * 0.007, 0.03);
+  cgModel.add(footR);
+
+  cgModel.rotation.y = cgRotation;
+  cgScene.add(cgModel);
+}
+
+function chargenApplyColors() {
+  if (!cgModel) return;
+  // Apply a tint to the loaded GLTF model based on appearance
+  // The model's materials get tinted with the torso color as the dominant hue
+  const torsoColor = new THREE.Color(chargenState.torsoColor);
+  const skinColor = new THREE.Color(chargenState.skinColor);
+  const hairColor = new THREE.Color(chargenState.hairColor);
+  const legsColor = new THREE.Color(chargenState.legsColor);
+  const feetColor = new THREE.Color(chargenState.feetColor);
+
+  cgModel.traverse((child) => {
+    if (!child.isMesh) return;
+    const mat = child.material;
+    if (!mat) return;
+
+    // Clone material so we don't mutate cached templates
+    const newMat = mat.clone();
+
+    // Heuristic: color parts based on mesh vertical position
+    const box = new THREE.Box3().setFromObject(child);
+    const centerY = (box.min.y + box.max.y) / 2;
+    const modelHeight = cgModel.scale.y > 0 ? 1 / cgModel.scale.y : 1;
+    const normalizedY = centerY * MODEL_SCALE; // rough world-space height
+
+    if (normalizedY > 1.4) {
+      newMat.color = hairColor; // hair/head region
+    } else if (normalizedY > 1.2) {
+      newMat.color = skinColor; // face/neck
+    } else if (normalizedY > 0.7) {
+      newMat.color = torsoColor; // torso/arms
+    } else if (normalizedY > 0.3) {
+      newMat.color = legsColor; // legs
+    } else {
+      newMat.color = feetColor; // feet
+    }
+    child.material = newMat;
+  });
+}
+
+function chargenUpdatePreview() {
+  // Colors are baked in vertex data — no need to reload models
+  chargenSyncColors();
+}
+
+function chargenConfirm() {
+  sendMsg({ t: 'set_appearance', appearance: { ...chargenState } });
+  myAppearance = { ...chargenState };
+  myGender = chargenState.bodyType === 'B' ? 'female' : 'male';
+  hideChargen();
+}
+
+let myAppearance = null;
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return [r, g, b];
+}
+
 // Focus the username input on load
 setTimeout(() => document.getElementById('login-input').focus(), 100);
 
@@ -4482,6 +5132,9 @@ function handleServerMsg(msg) {
       for (const p of msg.players) {
         if (p.id === myId) {
           myX = p.x; myY = p.y; myGender = p.g || 'male';
+          if (p.a && !myAppearance) {
+            myAppearance = { bodyType: p.a.bt, hairColor: p.a.hc, torsoColor: p.a.tc, legsColor: p.a.lc, feetColor: p.a.fc, skinColor: p.a.sc };
+          }
           if (myX === destX && myY === destY) { destX = -1; destY = -1; }
         } else {
           const sm = playerSmooth.get(p.id);
@@ -4518,6 +5171,12 @@ function handleServerMsg(msg) {
       break;
     case 'wall_edge':
       setWallEdge(msg.x, msg.y, msg.mask);
+      if (msg.tex) setWallTex(msg.x, msg.y, msg.tex);
+      terrain3dBuilt.clear();
+      break;
+    case 'wall_tex':
+      wallTexMap.set(`${currentLayer}_${msg.x}_${msg.y}`, msg.tex);
+      terrain3dBuilt.clear();
       break;
     case 'door_edge':
       setDoorEdge(msg.x, msg.y, msg.mask);
@@ -4535,6 +5194,7 @@ function handleServerMsg(msg) {
       if (msg.roofs) {
         for (const [k, v] of Object.entries(msg.roofs)) { roofPlacements.set(k, v); if (v.id >= nextRoofId) nextRoofId = v.id + 1; }
       }
+      if (msg.wallTextures) for (const [k, v] of Object.entries(msg.wallTextures)) wallTexMap.set(k, v);
       break;
     case 'place_roof':
       roofPlacements.set(`${msg.roof.layer}_${msg.roof.id}`, msg.roof);
@@ -4552,6 +5212,13 @@ function handleServerMsg(msg) {
     case 'move_to':
       myX = msg.x; myY = msg.y; mySmX = msg.x; mySmY = msg.y;
       if (msg.layer !== undefined) { currentLayer = msg.layer; document.getElementById('layer-display').textContent = `L:${currentLayer}`; chunkCache.clear(); }
+      break;
+    case 'need_chargen':
+      showChargen();
+      break;
+    case 'appearance':
+      myAppearance = msg.appearance;
+      myGender = msg.appearance.bodyType === 'B' ? 'female' : 'male';
       break;
     case 'set_height':
       if (msg.h === 0) tileHeights.delete(`${msg.layer}_${msg.x}_${msg.y}`);
@@ -4584,8 +5251,12 @@ function handleServerMsg(msg) {
       myStats.skills = msg.skills; myStats.inv = msg.inv;
       if (msg.equip) myEquip = msg.equip;
       if (msg.bonuses) myBonuses = msg.bonuses;
+      if ('activePrayer' in msg) updatePrayerUI(msg.activePrayer);
       tutorialHint = msg.tutorialHint || null;
       updateStatsUI();
+      break;
+    case 'prayer':
+      updatePrayerUI(msg.active);
       break;
     case 'names':
       customNameMap = msg.names || {};
@@ -4830,22 +5501,26 @@ function showChat(msg, color = '#000') {
   const youHit = msg.match(/You hit (\w[\w ]*) for (\d+)/);
   if (youHit) {
     const npc = combatTargetId !== null ? npcList.find(n => n.id === combatTargetId) : npcList.find(n => n.name === youHit[1]);
-    if (npc) spawnHitsplat(npc.x, npc.y, youHit[2], youHit[2] === '0' ? '#2244cc' : '#ff2020', false);
-    else spawnHitsplat(myX, myY, youHit[2], youHit[2] === '0' ? '#2244cc' : '#ff2020', false);
-  }
-  const youMiss = msg.match(/You miss (\w[\w ]*)/);
-  if (youMiss) {
-    const npc = combatTargetId !== null ? npcList.find(n => n.id === combatTargetId) : npcList.find(n => n.name === youMiss[1]);
-    if (npc) spawnHitsplat(npc.x, npc.y, '0', '#2244cc', false);
+    if (npc) spawnHitsplat(npc.x, npc.y, youHit[2], '#ff2020', false);
+    else spawnHitsplat(myX, myY, youHit[2], '#ff2020', false);
   }
   const npcHit = msg.match(/hits you for (\d+)/);
-  if (npcHit) spawnHitsplat(myX, myY, npcHit[1], npcHit[1] === '0' ? '#2244cc' : '#991010', true);
-  const npcMiss = msg.match(/ misses \(/);
-  if (npcMiss) spawnHitsplat(myX, myY, '0', '#2244cc', true);
+  if (npcHit) spawnHitsplat(myX, myY, npcHit[1], '#991010', true);
   if (msg.match(/^You killed /)) combatTargetId = null;
 }
 
 let combatTargetId = null;
+let activePrayer = null;
+const PRAYER_ICONS = { melee: '\u2694', ranged: '\uD83C\uDFF9', magic: '\u272A' };
+function updatePrayerUI(style) {
+  activePrayer = style;
+  document.querySelectorAll('.prayer-btn').forEach(btn => {
+    const active = btn.dataset.prayer === style;
+    btn.style.background = active ? '#2a6e2a' : '#1a1a1a';
+    btn.style.borderColor = active ? '#4f4' : '#444';
+    btn.style.color = active ? '#fff' : '#ccc';
+  });
+}
 
 const ALL_SKILLS = [
   'attack','hitpoints','mining',
@@ -5816,8 +6491,8 @@ if (localStorage.getItem('openscape-grad-active') === '1') {
 }
 
 // ── Tab Pop-out System ────────────────────────────────────────────────────────
-const TAB_NAMES = { combat: 'Combat', stats: 'Skills', quest: 'Quests', inv: 'Inventory', equip: 'Equipment', prayer: 'Prayer', magic: 'Magic' };
-const TAB_ICONS_MAP = { combat: '\u2694', stats: '\u2733', quest: '\u270E', inv: '\u25A6', equip: '\u265F', prayer: '\u2726', magic: '\u2736' };
+const TAB_NAMES = { combat: 'Combat', stats: 'Skills', quest: 'Quests', inv: 'Inventory', equip: 'Equipment', prayer: 'Prayer', magic: 'Magic', account: 'Account' };
+const TAB_ICONS_MAP = { combat: '\u2694', stats: '\u2733', quest: '\u270E', inv: '\u25A6', equip: '\u265F', prayer: '\u2726', magic: '\u2736', account: '\u2699' };
 let popoutCounter = 0;
 const popoutPanels = []; // track all popped-out panels
 
@@ -6257,7 +6932,7 @@ function toggleBuildPanel(panel) {
 
   switch (panel) {
     case 'terrain': renderTerrainBuildPanel(content); break;
-    case 'walls': content.innerHTML = renderWallsBuildPanel(); break;
+    case 'walls': renderWallsBuildPanel(content); break;
     case 'objects': content.innerHTML = renderObjectsBuildPanel(); break;
     case 'roofs': content.innerHTML = renderRoofsBuildPanel(); break;
     case 'layers': content.innerHTML = renderLayersBuildPanel(); break;
@@ -6346,8 +7021,11 @@ function activateBuildTool(tool) {
 }
 window.activateBuildTool = activateBuildTool;
 
-function renderWallsBuildPanel() {
-  return '<h3>Walls</h3>' +
+function renderWallsBuildPanel(container) {
+  // Get wall-category textures (T.WALL variants)
+  const wallTextures = allTextures.filter(t => t.type === T.WALL);
+
+  let html = '<h3>Walls</h3>' +
     '<div class="bp-section"><div class="bp-section-title">Tools</div><div class="bp-tools">' +
     '<button class="bp-btn' + (wallToolActive ? ' active' : '') + '" onclick="activateBuildTool(\'wall\');setTimeout(()=>toggleBuildPanel(\'walls\'),50)">Wall</button>' +
     '<button class="bp-btn' + (roomToolActive ? ' active' : '') + '" onclick="activateBuildTool(\'room\');setTimeout(()=>toggleBuildPanel(\'walls\'),50)">Room</button>' +
@@ -6355,7 +7033,33 @@ function renderWallsBuildPanel() {
     '<button class="bp-btn' + (eraserActive ? ' active' : '') + '" onclick="activateBuildTool(\'eraser\');setTimeout(()=>toggleBuildPanel(\'walls\'),50)">Eraser</button>' +
     '<button class="bp-btn' + (selectToolActive ? ' active' : '') + '" onclick="activateBuildTool(\'select\');setTimeout(()=>toggleBuildPanel(\'walls\'),50)">Select</button>' +
     '</div></div>' +
+    '<div class="bp-section"><div class="bp-section-title">Wall Texture</div>' +
+    '<div class="bp-tex-grid" id="wall-tex-grid"></div></div>' +
     '<div style="color:#777;font-size:11px;margin-top:4px;">Drag on the map to draw walls or rooms. Click walls to place doors.</div>';
+
+  if (container) {
+    container.innerHTML = html;
+    // Render texture thumbnails
+    const grid = document.getElementById('wall-tex-grid');
+    if (grid) {
+      for (const tex of wallTextures) {
+        const thumb = document.createElement('canvas');
+        thumb.width = 32; thumb.height = 32;
+        thumb.title = tex.name + ' v' + tex.variant;
+        const tctx = thumb.getContext('2d');
+        tctx.imageSmoothingEnabled = false;
+        tctx.drawImage(tex.canvas, 0, 0, 32, 32);
+        if (selectedWallTex.type === tex.type && selectedWallTex.variant === tex.variant) thumb.classList.add('selected');
+        thumb.addEventListener('click', () => {
+          selectedWallTex = { type: tex.type, variant: tex.variant };
+          renderWallsBuildPanel(container);
+        });
+        grid.appendChild(thumb);
+      }
+    }
+    return;
+  }
+  return html;
 }
 
 function renderObjectsBuildPanel() {
@@ -7418,6 +8122,8 @@ canvas.addEventListener('mouseup', (e) => {
       : calcWallLine(wallDragStart.vx, wallDragStart.vy, v.vx, v.vy);
     const deleting = wallDragStart.deleting;
     const undoOps = [];
+    const texKey = `${selectedWallTex.type}_${selectedWallTex.variant}`;
+    const texTiles = new Set(); // track tiles that got new walls
     for (const edge of line) {
       const oldMask = getWallEdge(edge.x, edge.y);
       const newMask = deleting ? (oldMask & ~edge.side) : (oldMask | edge.side);
@@ -7425,7 +8131,14 @@ canvas.addEventListener('mouseup', (e) => {
         setWallEdge(edge.x, edge.y, newMask);
         sendMsg({ t: 'wall_edge', x: edge.x, y: edge.y, mask: newMask });
         undoOps.push({ type: 'wall', x: edge.x, y: edge.y, oldMask, newMask });
+        if (!deleting && newMask > 0) texTiles.add(`${edge.x}_${edge.y}`);
       }
+    }
+    // Set wall texture for newly walled tiles
+    for (const tk of texTiles) {
+      const [tx, ty] = tk.split('_').map(Number);
+      setWallTex(tx, ty, texKey);
+      sendMsg({ t: 'wall_tex', x: tx, y: ty, tex: texKey });
     }
     if (undoOps.length > 0) {
       undoStack.push(undoOps);
@@ -7624,7 +8337,39 @@ document.addEventListener('keydown', (e) => {
           else if (cmd === 'pos') { showChat(`Position: (${myX}, ${myY}) Layer: ${currentLayer}`, '#0ff'); }
           else if (cmd.startsWith('tp ')) { const parts = cmd.split(' '); if (parts.length >= 3) { game.teleport(parseInt(parts[1]), parseInt(parts[2])); } }
           else if (cmd.startsWith('layer ')) { const l = parseInt(cmd.split(' ')[1]); if (!isNaN(l)) { currentLayer = l; changeLayer(0); sendMsg({ t: 'set_layer', layer: l }); } }
-          else if (cmd === 'help') { showChat('Commands: /build /play /3d /2d /pos /tp x y /layer n /help', '#ff981f'); }
+          else if (cmd === 'appearance' || cmd === 'chargen') {
+            // Pre-fill chargen with current appearance if we have one
+            if (myAppearance) {
+              chargenState.bodyType = myAppearance.bodyType || 'A';
+              chargenState.head = myAppearance.head || 0;
+              chargenState.jaw = myAppearance.jaw || 0;
+              chargenState.torso = myAppearance.torso || 0;
+              chargenState.arms = myAppearance.arms || 0;
+              chargenState.hands = myAppearance.hands || 0;
+              chargenState.legs = myAppearance.legs || 0;
+              chargenState.feet = myAppearance.feet || 0;
+              chargenState.hairColor = myAppearance.hairColor || '#6B3A2A';
+              chargenState.torsoColor = myAppearance.torsoColor || '#8B7355';
+              chargenState.legsColor = myAppearance.legsColor || '#4A5568';
+              chargenState.feetColor = myAppearance.feetColor || '#5C4033';
+              chargenState.skinColor = myAppearance.skinColor || '#D4A574';
+              // Update UI inputs
+              for (const slot of Object.keys(CHARGEN_SLOTS)) {
+                document.getElementById('cg-' + slot + '-val').textContent = chargenState[slot] + 1;
+              }
+              document.getElementById('cg-hair-color').value = chargenState.hairColor;
+              document.getElementById('cg-torso-color').value = chargenState.torsoColor;
+              document.getElementById('cg-legs-color').value = chargenState.legsColor;
+              document.getElementById('cg-feet-color').value = chargenState.feetColor;
+              document.getElementById('cg-skin-color').value = chargenState.skinColor;
+              document.querySelectorAll('#chargen-body-type button').forEach(b => {
+                b.classList.toggle('active', b.textContent.includes(chargenState.bodyType));
+              });
+            }
+            showChargen();
+            showChat('Customise your appearance.', '#d4981f');
+          }
+          else if (cmd === 'help') { showChat('Commands: /build /play /3d /2d /pos /tp x y /layer n /appearance /help', '#ff981f'); }
           else { showChat('Unknown command: /' + cmd + ' — type /help', '#f44'); }
         } else {
           sendMsg({ t: 'chat', msg });
@@ -7666,7 +8411,8 @@ document.addEventListener('keydown', (e) => {
   // In 3D mode, WASD is movement — but check tool binds first
   // (tool keybinds take priority over WASD movement)
 
-  // Use customizable keybinds
+  // Use customizable keybinds — build keys only in build mode
+  if (buildMode) {
   if (matchesKeybind(e, 'build.select')) { document.getElementById('btn-select').click(); return; }
   if (matchesKeybind(e, 'build.eraser')) { document.getElementById('btn-eraser').click(); return; }
   if (matchesKeybind(e, 'build.wall')) { document.getElementById('btn-wall').click(); return; }
@@ -7687,6 +8433,7 @@ document.addEventListener('keydown', (e) => {
     showChat(showGrid ? 'Tile grid ON' : 'Tile grid OFF', '#333');
     return;
   }
+  } // end buildMode keybinds
   if (e.key === 'G') {
     showChunkGrid = !showChunkGrid;
     if (mode3d) {
@@ -7819,6 +8566,9 @@ document.getElementById('modal-name').addEventListener('keydown', (e) => {
 // ── Render ─────────────────────────────────────────────────────────────────────
 function render() {
   if (!connected) { requestAnimationFrame(render); return; }
+  // Pause main render when chargen is open to save GPU
+  const cgOpen = document.getElementById('chargen-screen').style.display === 'flex';
+  if (cgOpen) { requestAnimationFrame(render); return; }
 
   // Smooth interpolation
   const lerpSpeed = 0.15;
@@ -8002,15 +8752,25 @@ function render() {
     drawLayerWalls(lo, lo < 0 ? 'rgba(255, 60, 60, 0.5)' : 'rgba(60, 140, 255, 0.5)');
   }
 
-  // Current layer wall edges (white)
-  ctx.strokeStyle = '#fefefe';
+  // Current layer wall edges (colored by wall texture)
   ctx.lineWidth = Math.max(1, Math.floor(TILE / 6));
-  ctx.beginPath();
+  // Group walls by texture color for batch drawing
+  const wallsByColor = new Map();
   for (let vy = -1; vy <= vty; vy++) {
     for (let vx = -1; vx <= vtx; vx++) {
       const wx = camX + vx, wy = camTopY - vy;
       const edges = getWallEdge(wx, wy);
       if (!edges) continue;
+      const texKey = wallTexMap.get(`${currentLayer}_${wx}_${wy}`) || `${T.WALL}_0`;
+      const hex = getWallTexHex(texKey);
+      if (!wallsByColor.has(hex)) wallsByColor.set(hex, []);
+      wallsByColor.get(hex).push({ vx, vy, edges });
+    }
+  }
+  for (const [hex, walls] of wallsByColor) {
+    ctx.strokeStyle = hex;
+    ctx.beginPath();
+    for (const { vx, vy, edges } of walls) {
       const px = vx * TILE, py = vy * TILE;
       if (edges & WALL_N) { ctx.moveTo(px, py); ctx.lineTo(px + TILE, py); }
       if (edges & WALL_S) { ctx.moveTo(px, py + TILE); ctx.lineTo(px + TILE, py + TILE); }
@@ -8019,8 +8779,8 @@ function render() {
       if (edges & WALL_DIAG_NE) { ctx.moveTo(px, py + TILE); ctx.lineTo(px + TILE, py); }
       if (edges & WALL_DIAG_NW) { ctx.moveTo(px, py); ctx.lineTo(px + TILE, py + TILE); }
     }
+    ctx.stroke();
   }
-  ctx.stroke();
 
   // Wall/Room tool drag preview (cyan)
   // Eraser preview (red rectangle)
@@ -8475,20 +9235,36 @@ function render() {
     female: { outline: '#4a4a7a', body: '#acace6', aura: [172, 172, 230] },
   };
 
-  function drawPlayer(sx, sy, gender, hp, maxHp, isMe) {
+  function drawPlayer(sx, sy, gender, hp, maxHp, isMe, appearance) {
     const c = PLAYER_COLORS[gender] || PLAYER_COLORS.male;
+    // Use appearance colors for body fill if available
+    const app = appearance || (isMe ? myAppearance : null);
+    // Determine body color from appearance or fallback to gender-based
+    const bodyColor = app ? app.torsoColor : c.body;
+    const outlineColor = app ? app.skinColor : c.outline;
     if (isMe) {
       const pcx = sx + TILE / 2, pcy = sy + TILE / 2;
       const aPulse = 0.18 + Math.sin(Date.now() * 0.003) * 0.06;
+      const auraColor = app ? hexToRgb(app.torsoColor) : c.aura;
       const aura = ctx.createRadialGradient(pcx, pcy, TILE * 0.2, pcx, pcy, TILE * 0.8);
-      aura.addColorStop(0, `rgba(${c.aura.join(',')},${aPulse})`);
-      aura.addColorStop(1, `rgba(${c.aura.join(',')},0)`);
+      aura.addColorStop(0, `rgba(${auraColor.join(',')},${aPulse})`);
+      aura.addColorStop(1, `rgba(${auraColor.join(',')},0)`);
       ctx.fillStyle = aura; ctx.fillRect(sx - 1, sy - 1, TILE + 2, TILE + 2);
       ctx.fillStyle = '#00ff00'; ctx.fillRect(sx, sy, TILE, TILE);
-      ctx.fillStyle = c.body; ctx.fillRect(sx + 1, sy + 1, TILE - 2, TILE - 2);
+      ctx.fillStyle = bodyColor; ctx.fillRect(sx + 1, sy + 1, TILE - 2, TILE - 2);
+      // Hair color accent on top
+      if (app && TILE >= 6) {
+        ctx.fillStyle = app.hairColor;
+        ctx.fillRect(sx + 1, sy + 1, TILE - 2, Math.max(1, Math.floor(TILE * 0.25)));
+      }
     } else {
-      ctx.fillStyle = c.outline; ctx.fillRect(sx, sy, TILE, TILE);
-      ctx.fillStyle = c.body; ctx.fillRect(sx + 1, sy + 1, TILE - 2, TILE - 2);
+      ctx.fillStyle = outlineColor; ctx.fillRect(sx, sy, TILE, TILE);
+      ctx.fillStyle = bodyColor; ctx.fillRect(sx + 1, sy + 1, TILE - 2, TILE - 2);
+      // Hair color accent on top
+      if (app && TILE >= 6) {
+        ctx.fillStyle = app.hairColor;
+        ctx.fillRect(sx + 1, sy + 1, TILE - 2, Math.max(1, Math.floor(TILE * 0.25)));
+      }
     }
     if (hp < maxHp) {
       const bw = TILE + 2, bx = sx - 1, by = sy - 4;
@@ -8503,7 +9279,9 @@ function render() {
     const dx = sm ? sm.x : p.x, dy = sm ? sm.y : p.y;
     const [sx, sy] = toScreen(dx, dy);
     if (sx < -TILE * 2 || sy < -TILE * 2 || sx > canvas.width + TILE || sy > canvas.height + TILE) continue;
-    drawPlayer(sx, sy, p.g || 'male', p.hp, p.maxHp, false);
+    // Expand compact appearance from state: {bt, hc, tc, lc, fc, sc}
+    const pApp = p.a ? { bodyType: p.a.bt, hairColor: p.a.hc, torsoColor: p.a.tc, legsColor: p.a.lc, feetColor: p.a.fc, skinColor: p.a.sc } : null;
+    drawPlayer(sx, sy, p.g || 'male', p.hp, p.maxHp, false, pApp);
   }
 
   // Player true tile marker (server-side position)
@@ -8517,6 +9295,18 @@ function render() {
   // Me
   const [mpx, mpy] = toScreen(mySmX, mySmY);
   drawPlayer(mpx, mpy, myGender, myStats.hp, myStats.maxHp, true);
+
+  // Overhead prayer icon
+  if (activePrayer && TILE >= 8) {
+    const icon = PRAYER_ICONS[activePrayer];
+    const iconSize = Math.max(10, Math.floor(TILE * 0.7));
+    ctx.font = `${iconSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillText(icon, mpx + TILE / 2 + 1, mpy - TILE * 0.3 + 1);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(icon, mpx + TILE / 2, mpy - TILE * 0.3);
+  }
 
   // Coordinate label on player tile
   if (TILE >= 16) {
@@ -8890,6 +9680,8 @@ function init3D() {
       const deleting = wall3dDragStart.deleting;
       if (hit && wallPreview.length > 0) {
         const undoOps = [];
+        const texKey = `${selectedWallTex.type}_${selectedWallTex.variant}`;
+        const texTiles = new Set();
         for (const edge of wallPreview) {
           const oldMask = getWallEdge(edge.x, edge.y);
           const newMask = deleting ? (oldMask & ~edge.side) : (oldMask | edge.side);
@@ -8897,7 +9689,13 @@ function init3D() {
             setWallEdge(edge.x, edge.y, newMask);
             sendMsg({ t: 'wall_edge', x: edge.x, y: edge.y, mask: newMask });
             undoOps.push({ type: 'wall', x: edge.x, y: edge.y, oldMask, newMask });
+            if (!deleting && newMask > 0) texTiles.add(`${edge.x}_${edge.y}`);
           }
+        }
+        for (const tk of texTiles) {
+          const [tx, ty] = tk.split('_').map(Number);
+          setWallTex(tx, ty, texKey);
+          sendMsg({ t: 'wall_tex', x: tx, y: ty, tex: texKey });
         }
         if (undoOps.length > 0) {
           undoStack.push(undoOps);
@@ -9174,13 +9972,18 @@ function buildChunkMesh(cx, cy) {
         const open = openDoors.get(`${layer}_${wx}_${wy}`) || 0;
         const x = ix, z = -iy;
 
-        // Walls (white/gray)
-        if (edges & WALL_N) addWallQuad(x, z-1, x+1, z-1, layerY, 0.85, 0.83, 0.80);
-        if (edges & WALL_S) addWallQuad(x, z, x+1, z, layerY, 0.85, 0.83, 0.80);
-        if (edges & WALL_W) addWallQuad(x, z, x, z-1, layerY, 0.75, 0.73, 0.70);
-        if (edges & WALL_E) addWallQuad(x+1, z, x+1, z-1, layerY, 0.75, 0.73, 0.70);
-        if (edges & WALL_DIAG_NE) addWallQuad(x, z, x+1, z-1, layerY, 0.80, 0.78, 0.75);
-        if (edges & WALL_DIAG_NW) addWallQuad(x, z-1, x+1, z, layerY, 0.80, 0.78, 0.75);
+        // Walls (colored by wall texture)
+        if (edges) {
+          const texKey = wallTexMap.get(`${layer}_${wx}_${wy}`) || `${T.WALL}_0`;
+          const wc = getWallTexColor(texKey);
+          // N/S faces slightly brighter, E/W slightly darker for depth
+          if (edges & WALL_N) addWallQuad(x, z-1, x+1, z-1, layerY, wc.r, wc.g, wc.b);
+          if (edges & WALL_S) addWallQuad(x, z, x+1, z, layerY, wc.r, wc.g, wc.b);
+          if (edges & WALL_W) addWallQuad(x, z, x, z-1, layerY, wc.r*0.88, wc.g*0.88, wc.b*0.88);
+          if (edges & WALL_E) addWallQuad(x+1, z, x+1, z-1, layerY, wc.r*0.88, wc.g*0.88, wc.b*0.88);
+          if (edges & WALL_DIAG_NE) addWallQuad(x, z, x+1, z-1, layerY, wc.r*0.94, wc.g*0.94, wc.b*0.94);
+          if (edges & WALL_DIAG_NW) addWallQuad(x, z-1, x+1, z, layerY, wc.r*0.94, wc.g*0.94, wc.b*0.94);
+        }
 
         // Closed doors (red-brown)
         if ((doors & WALL_N) && !(open & WALL_N)) addWallQuad(x, z-1, x+1, z-1, layerY, 0.55, 0.25, 0.10);
@@ -9451,23 +10254,16 @@ function updateEntities3D() {
     const sh = getTerrainHeight(Math.floor(sx), Math.floor(sy));
 
     if (!player3dMeshes.has(p.id)) {
-      const capsGeo = new THREE.CylinderGeometry(0.3, 0.3, 1.4, 8);
-      const capsMat = new THREE.MeshLambertMaterial({ color: 0x00ccff });
-      const capsule = new THREE.Mesh(capsGeo, capsMat);
-      capsule.castShadow = true;
-      capsule.userData.isFallback = true;
-      scene3d.add(capsule);
-      player3dMeshes.set(p.id, capsule);
+      // Create group for composited kit parts
+      const group = new THREE.Group();
+      group.userData.isFallback = true;
+      scene3d.add(group);
+      player3dMeshes.set(p.id, group);
 
+      // Load kit models based on player appearance
       const playerId = p.id;
-      loadModel('npc_man', (template) => {
-        const old = player3dMeshes.get(playerId);
-        if (old) scene3d.remove(old);
-        const obj = template.clone();
-        obj.userData.isFallback = false;
-        scene3d.add(obj);
-        player3dMeshes.set(playerId, obj);
-      });
+      const pApp = p.a ? { bodyType: p.a.bt || 'A', torso: 0, arms: 0, hands: 0, legs: 0, feet: 0, jaw: 0 } : null;
+      loadPlayerKitModels(playerId, pApp, group);
 
       const kp = knownPlayers.find(k => k.id === p.id);
       const pName = kp ? kp.name : `Player ${p.id}`;
@@ -9494,24 +10290,71 @@ function updateEntities3D() {
   // My player
   const myH = getTerrainHeight(myX, myY);
   if (!myPlayer3dMesh) {
-    const capsGeo = new THREE.CylinderGeometry(0.3, 0.3, 1.4, 8);
-    const capsMat = new THREE.MeshLambertMaterial({ color: 0xff00ff });
-    myPlayer3dMesh = new THREE.Mesh(capsGeo, capsMat);
-    myPlayer3dMesh.castShadow = true;
+    myPlayer3dMesh = new THREE.Group();
     myPlayer3dMesh.userData.isFallback = true;
     scene3d.add(myPlayer3dMesh);
 
-    loadModel('npc_man', (template) => {
-      if (myPlayer3dMesh) scene3d.remove(myPlayer3dMesh);
-      myPlayer3dMesh = template.clone();
-      myPlayer3dMesh.userData.isFallback = false;
-      scene3d.add(myPlayer3dMesh);
-    });
+    // Load my kit models
+    loadPlayerKitModels('me', myAppearance, myPlayer3dMesh);
   }
-  myPlayer3dMesh.position.set(myX + 0.5, myH + (myPlayer3dMesh.userData.isFallback ? 0.7 : 0), -(myY + 0.5));
+  myPlayer3dMesh.position.set(myX + 0.5, myH, -(myY + 0.5));
 }
 
 let playerMesh3d = null; // kept for compat
+
+// Cache for in-game kit models
+const kitModelCache = {};
+
+// Load kit GLTF models into a player group based on appearance
+function loadPlayerKitModels(playerId, appearance, group) {
+  const bt = (appearance && appearance.bodyType) || 'A';
+  const kits = KIT_MODELS[bt];
+  if (!kits) {
+    loadModel('npc_man', (template) => {
+      const obj = template.clone();
+      group.add(obj);
+      group.userData.isFallback = false;
+    });
+    return;
+  }
+
+  // Rotate 180 so character faces forward (OSRS models face -Z, Three.js faces +Z)
+  group.rotation.y = Math.PI;
+
+  const slots = ['HEAD', 'TORSO', 'ARMS', 'HANDS', 'LEGS', 'FEET', 'JAW'];
+  const stateKeys = { HEAD: 'head', TORSO: 'torso', ARMS: 'arms', HANDS: 'hands', LEGS: 'legs', FEET: 'feet', JAW: 'jaw' };
+  const loader = gltfLoader || (typeof THREE !== 'undefined' && THREE.GLTFLoader ? new THREE.GLTFLoader() : null);
+  if (!loader) return;
+
+  for (const slot of slots) {
+    const options = kits[slot];
+    if (!options || options.length === 0) continue;
+    const idx = Math.min((appearance && appearance[stateKeys[slot]]) || 0, options.length - 1);
+    const modelNames = options[idx];
+
+    for (const modelName of modelNames) {
+      if (kitModelCache[modelName]) {
+        const part = kitModelCache[modelName].clone();
+        part.userData.kitSlot = slot;
+        group.add(part);
+        group.userData.isFallback = false;
+      } else {
+        loader.load(`/models/${modelName}.gltf`, (gltf) => {
+          const template = gltf.scene;
+          template.traverse(child => {
+            if (child.isMesh && child.geometry) child.geometry.computeVertexNormals();
+          });
+          kitModelCache[modelName] = template;
+          const part = template.clone();
+          part.userData.kitSlot = slot;
+          group.add(part);
+          group.userData.isFallback = false;
+        }, undefined, () => {});
+      }
+    }
+  }
+}
+
 function update3D() {
   if (!mode3d || !scene3d) return;
 

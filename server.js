@@ -19,7 +19,9 @@ const DOORS_FILE = path.join(DATA_DIR, 'doors.json');
 const HEIGHTS_FILE = path.join(DATA_DIR, 'heights.json');
 const POSITIONS_FILE = path.join(DATA_DIR, 'positions.json');
 const VARIANTS_FILE = path.join(DATA_DIR, 'variants.json');
+const APPEARANCES_FILE = path.join(DATA_DIR, 'appearances.json');
 const playerPositions = new Map(); // name → {x, y, layer}
+const playerAppearances = new Map(); // name → appearance object
 const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1480654483095552123/AsoMuMPfGyKNYma5hh-kYnIaNLm4sLF8Ui3rVewiZf37anEXyw5qU_7I8E8gQkDcDm1E';
 const DISCORD_BOT_USER_ID = '1464768627709313044';
 const BOT_PLAYER_ID = 0; // Reserved ID for Discord bot "AI"
@@ -267,12 +269,14 @@ function loadVariants() {
 
 // Wall/door edge storage (server-side, mirrors client)
 const serverWallEdges = new Map(); // "layer_x_y" → bitmask (N=1, E=2, S=4, W=8, diagNE=16, diagNW=32)
+const serverWallTexMap = new Map(); // "layer_x_y" → "type_variant" (wall texture key)
 const serverDoorEdges = new Map();
 const serverOpenDoors = new Map(); // "layer_x_y" → bitmask of which edges are currently open
 const serverTileHeights = new Map(); // "layer_x_y" → height (float)
 const serverRoofs = new Map(); // "layer_id" → roof object
 let serverNextRoofId = 1;
 const ROOFS_FILE = path.join(DATA_DIR, 'roofs.json');
+const WALL_TEX_FILE = path.join(DATA_DIR, 'wall_textures.json');
 
 function saveWalls() {
   try {
@@ -284,6 +288,8 @@ function saveWalls() {
     fs.writeFileSync(HEIGHTS_FILE, JSON.stringify(heights));
     const roofs = {}; for (const [k, v] of serverRoofs) roofs[k] = v;
     fs.writeFileSync(ROOFS_FILE, JSON.stringify(roofs));
+    const wallTex = {}; for (const [k, v] of serverWallTexMap) wallTex[k] = v;
+    fs.writeFileSync(WALL_TEX_FILE, JSON.stringify(wallTex));
   } catch (e) { console.warn('[walls] Save error:', e.message); }
 }
 
@@ -308,6 +314,11 @@ function loadWalls() {
       const roofs = JSON.parse(fs.readFileSync(ROOFS_FILE, 'utf8'));
       for (const [k, v] of Object.entries(roofs)) { serverRoofs.set(k, v); if (v.id >= serverNextRoofId) serverNextRoofId = v.id + 1; }
       console.log(`[roofs] Loaded ${serverRoofs.size} roofs`);
+    }
+    if (fs.existsSync(WALL_TEX_FILE)) {
+      const wallTex = JSON.parse(fs.readFileSync(WALL_TEX_FILE, 'utf8'));
+      for (const [k, v] of Object.entries(wallTex)) serverWallTexMap.set(k, v);
+      console.log(`[wallTex] Loaded ${serverWallTexMap.size} wall textures`);
     }
   } catch (e) { console.warn('[walls] Load error:', e.message); }
 }
@@ -434,6 +445,34 @@ function savePositions() {
   } catch (e) {}
 }
 
+const DEFAULT_APPEARANCE = {
+  bodyType: 'A', // A or B
+  head: 0, jaw: 0, torso: 0, arms: 0, hands: 0, legs: 0, feet: 0,
+  hairColor: '#6B3A2A', torsoColor: '#8B7355', legsColor: '#4A5568', feetColor: '#5C4033', skinColor: '#D4A574',
+};
+
+function loadAppearances() {
+  try {
+    if (fs.existsSync(APPEARANCES_FILE)) {
+      const data = JSON.parse(fs.readFileSync(APPEARANCES_FILE, 'utf8'));
+      for (const [name, app] of Object.entries(data)) playerAppearances.set(name, app);
+      console.log(`[appearances] Loaded ${playerAppearances.size} saved appearances`);
+    }
+  } catch (e) {}
+}
+function saveAppearances() {
+  try {
+    const data = {};
+    for (const [name, app] of playerAppearances) data[name] = app;
+    // Also save all currently online players
+    for (const [, p] of players) {
+      const name = playerNames.get(p.id);
+      if (name && p.appearance) data[name] = p.appearance;
+    }
+    fs.writeFileSync(APPEARANCES_FILE, JSON.stringify(data));
+  } catch (e) {}
+}
+
 function loadFriends() {
   try {
     if (fs.existsSync(FRIENDS_FILE)) {
@@ -544,6 +583,16 @@ function getItemBonuses(itemId) {
 
 function itemName(id) { const d = itemDefs.get(id); return d ? d.name : `Item #${id}`; }
 function findItemId(name) { const d = ITEM_BY_NAME.get(name.toLowerCase()); return d ? d.id : -1; }
+
+// ── Gear Tier System ─────────────────────────────────────────────────────────
+// Every weapon/armor gets a tier (1, 2, or 3). Players can lock their account
+// to a lower tier as a self-imposed challenge (like OSRS pures but for gear).
+// p.gearTier = 1|2|3 — blocks equipping anything above that tier.
+// Tier 1: basic (bronze-level)  — low max hit, low DR
+// Tier 2: mid   (iron-level)    — moderate max hit, moderate DR
+// Tier 3: end   (steel+-level)  — full max hit, full DR
+// Items should have a `tier` field (1/2/3). On equip: if (item.tier > p.gearTier) reject.
+// TODO: add tier field to item defs, equip handler check, UI toggle to lock tier
 
 // Equipment slots
 const EQUIP_SLOTS = ['head', 'cape', 'neck', 'weapon', 'body', 'shield', 'legs', 'hands', 'feet', 'ring', 'ammo'];
@@ -1005,7 +1054,7 @@ function sendStats(p) {
   for (const s of EQUIP_SLOTS) {
     if (p.equipment[s] >= 0) equip[s] = { id: p.equipment[s], name: itemName(p.equipment[s]) };
   }
-  send(p.ws, { t: 'stats', hp: p.hp, maxHp: p.maxHp, skills: p.skills, inv, equip, bonuses: calcEquipBonuses(p.equipment) });
+  send(p.ws, { t: 'stats', hp: p.hp, maxHp: p.maxHp, skills: p.skills, inv, equip, bonuses: calcEquipBonuses(p.equipment), activePrayer: p.activePrayer });
 }
 
 function addItemById(p, id, count = 1) {
@@ -1197,19 +1246,25 @@ function createPlayer(ws) {
   const sy = SPAWN_Y;
   const skills = {};
   for (const s of ALL_SKILLS) skills[s] = { xp: 0, level: 1 };
-  skills.hitpoints = { xp: 1154, level: 10 };
+  // Combat stats start at 99 — balanced around max cb, gear is the lever
+  const XP_99 = xpForLevel(99);
+  for (const s of ['attack', 'strength', 'defence', 'ranged', 'prayer', 'magic', 'hitpoints']) {
+    skills[s] = { xp: XP_99, level: 99 };
+  }
   const equipment = {};
   for (const s of EQUIP_SLOTS) equipment[s] = -1;
   const pid = nextPlayerId++;
   playerNames.set(pid, `Player ${pid}`);
   if (!friendsData.has(pid)) friendsData.set(pid, new Set());
   return {
-    id: pid, ws, x: sx, y: sy, prevX: sx, prevY: sy, layer: 0, hp: 10, maxHp: 10,
-    gender: 'male', sentChunks: new Set(),
+    id: pid, ws, x: sx, y: sy, prevX: sx, prevY: sy, layer: 0, hp: 99, maxHp: 99,
+    gender: 'male', appearance: { ...DEFAULT_APPEARANCE }, sentChunks: new Set(),
     path: [], gathering: null, actionTick: 0,
     combatTarget: null, clickedNpc: null, pendingPickup: null, pendingTalk: null, gatherCluster: null,
     nextAttackTick: 0, attackSpeed: 4,
     autoRetaliate: true,
+    activePrayer: null, // null | 'melee' | 'ranged' | 'magic'
+    gearTier: 3, // 1-3, restricts equippable gear tier (self-imposed challenge mode)
     skills, equipment,
     inventory: [],
     // Tutorial Island state
@@ -1318,13 +1373,8 @@ function playerAttackTick(p, npcId) {
     maxHit = Math.max(1, Math.floor(0.5 + effStr * (bonuses.str + 64) / 640));
   }
 
-  let hitChance;
-  if (attRoll > defRoll) hitChance = 1 - (defRoll + 2) / (2 * (attRoll + 1));
-  else hitChance = attRoll / (2 * (defRoll + 1));
-
-  // Calculate damage
-  const hit = rng() < hitChance;
-  const dmg = hit ? Math.floor(rng() * (maxHit + 1)) : 0;
+  // Every attack lands — no accuracy roll, minimum 1 damage
+  const dmg = Math.max(1, Math.floor(rng() * (maxHit + 1)));
 
   // Projectile delay for ranged/magic
   const projDelay = combat.style !== 'melee' ? getProjectileDelay(p.x, p.y, npc.x, npc.y) : 0;
@@ -1335,23 +1385,15 @@ function playerAttackTick(p, npcId) {
     sendChat(p, `[${tick}] You cast at ${npc.name} (${combat.style}, delay=${projDelay}t) P:${px},${py} N:${nx},${ny}`, '#f44');
     schedule(tick + projDelay, 1, `proj:${p.id}:${tick}`, () => {
       if (npc.dead) return;
-      if (dmg > 0) {
-        npc.hp -= dmg;
-        sendChat(p, `[${tick}] You hit ${npc.name} for ${dmg} (P:${px},${py} N:${npc.x},${npc.y})`, '#f44');
-      } else {
-        sendChat(p, `[${tick}] You miss ${npc.name} (P:${px},${py} N:${npc.x},${npc.y})`, '#f44');
-      }
+      npc.hp -= dmg;
+      sendChat(p, `[${tick}] You hit ${npc.name} for ${dmg} (P:${px},${py} N:${npc.x},${npc.y})`, '#f44');
       applyKillCheck(p, npc);
       giveXp(p, combat.style, dmg);
     });
   } else {
     // Melee: instant damage
-    if (dmg > 0) {
-      npc.hp -= dmg;
-      sendChat(p, `[${tick}] You hit ${npc.name} for ${dmg} (P:${p.x},${p.y} N:${npc.x},${npc.y})`, '#f44');
-    } else {
-      sendChat(p, `[${tick}] You miss ${npc.name} (P:${p.x},${p.y} N:${npc.x},${npc.y})`, '#f44');
-    }
+    npc.hp -= dmg;
+    sendChat(p, `[${tick}] You hit ${npc.name} for ${dmg} (P:${p.x},${p.y} N:${npc.x},${npc.y})`, '#f44');
     applyKillCheck(p, npc);
     giveXp(p, combat.style, dmg);
   }
@@ -1427,27 +1469,16 @@ function npcAttackTick(npc) {
     schedule(npc.nextAttackTick, 2, `natk:${npc.id}`, () => npcAttackTick(npc));
     return;
   }
-  // Execute NPC attack
-  const bonuses = calcEquipBonuses(combatant.equipment);
-  const npcAttRoll = ((npc.attack || 1) + 9) * 64;
-  const pDefRoll = (combatant.skills.defence.level + 1 + 8) * (bonuses.dslash + 64);
-  let npcHitChance;
-  if (npcAttRoll > pDefRoll) npcHitChance = 1 - (pDefRoll + 2) / (2 * (npcAttRoll + 1));
-  else npcHitChance = npcAttRoll / (2 * (pDefRoll + 1));
-  if (rng() < npcHitChance) {
-    const npcMaxHit = Math.max(1, Math.floor(0.5 + ((npc.strength || npc.attack || 1) + 9) * 64 / 640));
-    const dmg = Math.floor(rng() * (npcMaxHit + 1));
-    if (dmg > 0) {
-      combatant.hp -= dmg;
-      sendChat(combatant, `[${tick}] ${npc.name} hits you for ${dmg} (P:${combatant.x},${combatant.y} N:${npc.x},${npc.y})`, '#f44');
-      addXp(combatant, 'defence', Math.floor(dmg * 1.33));
-      if (combatant.hp <= 0) killPlayer(combatant);
-    } else {
-      sendChat(combatant, `[${tick}] ${npc.name} hits you for 0 (P:${combatant.x},${combatant.y} N:${npc.x},${npc.y})`, '#f44');
-    }
-  } else {
-    sendChat(combatant, `[${tick}] ${npc.name} misses (P:${combatant.x},${combatant.y} N:${npc.x},${npc.y})`, '#f44');
-  }
+  // Execute NPC attack — every attack lands, minimum 1 damage
+  const npcStyle = npc.combatStyle || 'melee';
+  const npcMaxHit = Math.max(1, Math.floor(0.5 + ((npc.strength || npc.attack || 1) + 9) * 64 / 640));
+  let dmg = Math.max(1, Math.floor(rng() * (npcMaxHit + 1)));
+  // Protection prayer: 100% block if correct style
+  if (combatant.activePrayer === npcStyle) dmg = 0;
+  combatant.hp -= dmg;
+  sendChat(combatant, `[${tick}] ${npc.name} hits you for ${dmg} (P:${combatant.x},${combatant.y} N:${npc.x},${npc.y})`, '#f44');
+  addXp(combatant, 'defence', Math.floor(dmg * 1.33));
+  if (combatant.hp <= 0) killPlayer(combatant);
   combatant.maxHp = combatant.skills.hitpoints.level;
   sendStats(combatant);
   // Auto-retaliate: only if player is idle (no active path) and not already fighting another NPC
@@ -1740,7 +1771,10 @@ function gameTick() {
       const pArr = [];
       for (const [, op] of players) {
         if (Math.abs(op.x - p.x) <= ENTITY_VIEW && Math.abs(op.y - p.y) <= ENTITY_VIEW) {
-          pArr.push({ id: op.id, x: op.x, y: op.y, hp: op.hp, maxHp: op.maxHp, g: op.gender, path: op.path.slice(0, 20) });
+          const opa = op.appearance;
+          pArr.push({ id: op.id, x: op.x, y: op.y, hp: op.hp, maxHp: op.maxHp, g: op.gender,
+            a: opa ? { bt: opa.bodyType, hc: opa.hairColor, tc: opa.torsoColor, lc: opa.legsColor, fc: opa.feetColor, sc: opa.skinColor } : null,
+            path: op.path.slice(0, 20) });
         }
       }
       const nArr = npcs.filter(n => !n.dead && Math.abs(n.x - p.x) <= ENTITY_VIEW && Math.abs(n.y - p.y) <= ENTITY_VIEW)
@@ -1827,6 +1861,15 @@ function handleMessage(ws, data) {
         p.sentChunks = new Set();
         send(ws, { t: 'move_to', x: p.x, y: p.y, layer: p.layer });
         updatePlayerChunks(p);
+      }
+      // Restore saved appearance
+      const savedApp = playerAppearances.get(name);
+      if (savedApp) {
+        p.appearance = savedApp;
+        p.gender = savedApp.bodyType === 'B' ? 'female' : 'male';
+        send(ws, { t: 'appearance', appearance: savedApp });
+      } else {
+        send(ws, { t: 'need_chargen' }); // No appearance = new player, show character creation
       }
       break;
     }
@@ -1926,6 +1969,32 @@ function handleMessage(ws, data) {
       break;
     }
     case 'gender': { p.gender = msg.v === 'female' ? 'female' : 'male'; break; }
+    case 'set_appearance': {
+      const a = msg.appearance;
+      if (!a || typeof a !== 'object') break;
+      const app = { ...DEFAULT_APPEARANCE };
+      app.bodyType = a.bodyType === 'B' ? 'B' : 'A';
+      app.head = Math.max(0, Math.min(8, parseInt(a.head) || 0));
+      app.jaw = Math.max(0, Math.min(7, parseInt(a.jaw) || 0));
+      app.torso = Math.max(0, Math.min(19, parseInt(a.torso) || 0));
+      app.arms = Math.max(0, Math.min(16, parseInt(a.arms) || 0));
+      app.hands = Math.max(0, Math.min(1, parseInt(a.hands) || 0));
+      app.legs = Math.max(0, Math.min(21, parseInt(a.legs) || 0));
+      app.feet = Math.max(0, Math.min(1, parseInt(a.feet) || 0));
+      // Validate colors are hex strings
+      const hexRe = /^#[0-9a-fA-F]{6}$/;
+      if (hexRe.test(a.hairColor)) app.hairColor = a.hairColor;
+      if (hexRe.test(a.torsoColor)) app.torsoColor = a.torsoColor;
+      if (hexRe.test(a.legsColor)) app.legsColor = a.legsColor;
+      if (hexRe.test(a.feetColor)) app.feetColor = a.feetColor;
+      if (hexRe.test(a.skinColor)) app.skinColor = a.skinColor;
+      p.appearance = app;
+      p.gender = app.bodyType === 'B' ? 'female' : 'male';
+      const name = playerNames.get(p.id);
+      if (name) { playerAppearances.set(name, app); saveAppearances(); }
+      sendChat(p, 'Appearance updated!', '#22c55e');
+      break;
+    }
     case 'door': {
       const dx = Math.floor(msg.x), dy = Math.floor(msg.y);
       if (Math.abs(p.x - dx) > 1 || Math.abs(p.y - dy) > 1) {
@@ -1980,6 +2049,17 @@ function handleMessage(ws, data) {
       sendChat(p, `Auto Retaliate: ${p.autoRetaliate ? 'ON' : 'OFF'}`, '#ff0');
       break;
     }
+    case 'toggle_prayer': {
+      const style = msg.v;
+      if (!['melee', 'ranged', 'magic'].includes(style)) break;
+      // Toggle off if already active, otherwise switch
+      p.activePrayer = p.activePrayer === style ? null : style;
+      if (p.activePrayer) sendChat(p, `Protect from ${style} activated.`, '#ff0');
+      else sendChat(p, 'Prayer deactivated.', '#ff0');
+      send(p.ws, { t: 'prayer', active: p.activePrayer });
+      break;
+    }
+    // case 'set_tier': TODO — wire up when gear system exists
     case 'skip_tutorial': {
       if (!p.tutorialComplete) completeTutorial(p);
       break;
@@ -2092,10 +2172,20 @@ function handleMessage(ws, data) {
       const x = Math.floor(msg.x), y = Math.floor(msg.y);
       const mask = Math.floor(msg.mask) & 0x3F;
       if (Math.abs(x - p.x) > ENTITY_VIEW || Math.abs(y - p.y) > ENTITY_VIEW) break;
-      if (mask === 0) serverWallEdges.delete(`${p.layer}_${x}_${y}`);
+      if (mask === 0) { serverWallEdges.delete(`${p.layer}_${x}_${y}`); serverWallTexMap.delete(`${p.layer}_${x}_${y}`); }
       else serverWallEdges.set(`${p.layer}_${x}_${y}`, mask);
       for (const [ws2, op] of players) {
         if (op.layer === p.layer) send(ws2, { t: 'wall_edge', x, y, mask });
+      }
+      break;
+    }
+    case 'wall_tex': {
+      const x = Math.floor(msg.x), y = Math.floor(msg.y);
+      const tex = String(msg.tex || '6_0');
+      if (Math.abs(x - p.x) > ENTITY_VIEW || Math.abs(y - p.y) > ENTITY_VIEW) break;
+      serverWallTexMap.set(`${p.layer}_${x}_${y}`, tex);
+      for (const [ws2, op] of players) {
+        if (op.layer === p.layer) send(ws2, { t: 'wall_tex', x, y, tex });
       }
       break;
     }
@@ -2289,7 +2379,8 @@ wss.on('connection', (ws) => {
   const allDoors = {}; for (const [k, v] of serverDoorEdges) allDoors[k] = v;
   const allHeights = {}; for (const [k, v] of serverTileHeights) allHeights[k] = v;
   const allRoofs = {}; for (const [k, v] of serverRoofs) allRoofs[k] = v;
-  send(ws, { t: 'all_edges', walls: allWalls, doors: allDoors, heights: allHeights, roofs: allRoofs });
+  const allWallTex = {}; for (const [k, v] of serverWallTexMap) allWallTex[k] = v;
+  send(ws, { t: 'all_edges', walls: allWalls, doors: allDoors, heights: allHeights, roofs: allRoofs, wallTextures: allWallTex });
   sendStats(p);
   sendFriendsList(p);
   sendChat(p, `Welcome to OpenScape! ${players.size} player(s) online.`, '#ff981f');
@@ -2309,8 +2400,12 @@ wss.on('connection', (ws) => {
     broadcast({ t: 'online_players', list: buildOnlineList() });
     // Save position on disconnect
     const name = playerNames.get(p.id);
-    if (name) playerPositions.set(name, { x: p.x, y: p.y, layer: p.layer });
+    if (name) {
+      playerPositions.set(name, { x: p.x, y: p.y, layer: p.layer });
+      if (p.appearance) playerAppearances.set(name, p.appearance);
+    }
     savePositions();
+    saveAppearances();
     console.log(`[leave] Player ${p.id} disconnected (${players.size} online)`);
   });
 });
@@ -2327,6 +2422,7 @@ loadFriends();
 loadWalls();
 loadVariants();
 loadPositions();
+loadAppearances();
 initBotPlayer();
 
 // Create a small grass island at spawn so the player can stand
@@ -2341,8 +2437,8 @@ setInterval(saveAllChunks, SAVE_INTERVAL_MS);
 setInterval(saveFriends, SAVE_INTERVAL_MS);
 setInterval(saveWalls, SAVE_INTERVAL_MS);
 setInterval(saveVariants, SAVE_INTERVAL_MS);
-process.on('SIGINT', () => { saveAllChunks(); saveFriends(); saveWalls(); saveVariants(); savePositions(); process.exit(); });
-process.on('SIGTERM', () => { saveAllChunks(); saveFriends(); saveWalls(); saveVariants(); savePositions(); process.exit(); });
+process.on('SIGINT', () => { saveAllChunks(); saveFriends(); saveWalls(); saveVariants(); savePositions(); saveAppearances(); process.exit(); });
+process.on('SIGTERM', () => { saveAllChunks(); saveFriends(); saveWalls(); saveVariants(); savePositions(); saveAppearances(); process.exit(); });
 
 server.listen(PORT, () => {
   console.log(`[server] OpenScape running on http://localhost:${PORT}`);
