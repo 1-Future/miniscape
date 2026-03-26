@@ -1869,7 +1869,8 @@ function handleMessage(ws, data) {
         p.gender = savedApp.bodyType === 'B' ? 'female' : 'male';
         send(ws, { t: 'appearance', appearance: savedApp });
       } else {
-        send(ws, { t: 'need_chargen' }); // No appearance = new player, show character creation
+        // No saved appearance — codex handles character creation now
+        send(ws, { t: 'appearance', appearance: DEFAULT_APPEARANCE });
       }
       break;
     }
@@ -2317,7 +2318,168 @@ function handleMessage(ws, data) {
 const clientPath = path.join(__dirname, 'client.html');
 const mapPath = path.join(__dirname, 'map.html');
 const launcherPath = path.join(__dirname, 'launcher.html');
+// ── Codex cache reader ──────────────────────────────────────────────────────────
+const CODEX_DIR = path.join(__dirname, 'codex');
+const ASSET_CACHE_DIR = path.join(__dirname, 'asset-cache');
+let codexIndex = null;
+
+function loadCodexCache() {
+  try {
+    const decodedPath = path.join(ASSET_CACHE_DIR, 'index-decoded.json');
+    const indexPath = path.join(ASSET_CACHE_DIR, 'index.json');
+    if (fs.existsSync(decodedPath)) {
+      codexIndex = JSON.parse(fs.readFileSync(decodedPath, 'utf8'));
+    } else if (fs.existsSync(indexPath)) {
+      codexIndex = JSON.parse(Buffer.from(fs.readFileSync(indexPath, 'utf8'), 'base64').toString());
+    }
+    if (codexIndex) console.log(`[codex] Loaded ${codexIndex.stats.totalItems} items, ${codexIndex.stats.totalKits} kits, ${codexIndex.stats.totalModels} models`);
+  } catch (e) { console.log('[codex] Cache not available:', e.message); }
+}
+
+function readCacheFile(subdir, id) {
+  try {
+    const raw = fs.readFileSync(path.join(ASSET_CACHE_DIR, subdir, id + '.json'), 'utf8');
+    return JSON.parse(Buffer.from(raw, 'base64').toString());
+  } catch (e) { return null; }
+}
+
+function rsHslToRgb(hsl) {
+  const h = (hsl >> 10) & 0x3F, s = (hsl >> 7) & 0x07, l = hsl & 0x7F;
+  const hue = h / 63, sat = s / 7, lit = l / 127;
+  const c = (1 - Math.abs(2 * lit - 1)) * sat;
+  const x = c * (1 - Math.abs((hue * 6) % 2 - 1));
+  const m = lit - c / 2;
+  let r, g, b;
+  const hi = Math.floor(hue * 6) % 6;
+  if (hi === 0) { r = c; g = x; b = 0; } else if (hi === 1) { r = x; g = c; b = 0; }
+  else if (hi === 2) { r = 0; g = c; b = x; } else if (hi === 3) { r = 0; g = x; b = c; }
+  else if (hi === 4) { r = x; g = 0; b = c; } else { r = c; g = 0; b = x; }
+  return [Math.max(0, Math.min(1, r + m)), Math.max(0, Math.min(1, g + m)), Math.max(0, Math.min(1, b + m))];
+}
+
+function modelToGltf(model) {
+  const vc = model.vertices.length, fc = model.faces.length, scale = 1 / 128;
+  const posBytes = vc * 3 * 4, colorBytes = vc * 3 * 4;
+  const idxBytes = fc * 3 * 2, idxPadded = (idxBytes + 3) & ~3;
+  const total = posBytes + colorBytes + idxPadded;
+  const buf = Buffer.alloc(total); let off = 0;
+  let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+  for (let i = 0; i < vc; i++) {
+    const v = model.vertices[i];
+    const px = v[0] * scale, py = -v[1] * scale, pz = v[2] * scale;
+    buf.writeFloatLE(px, off); buf.writeFloatLE(py, off + 4); buf.writeFloatLE(pz, off + 8); off += 12;
+    minX = Math.min(minX, px); maxX = Math.max(maxX, px);
+    minY = Math.min(minY, py); maxY = Math.max(maxY, py);
+    minZ = Math.min(minZ, pz); maxZ = Math.max(maxZ, pz);
+  }
+  const vertR = new Float32Array(vc), vertG = new Float32Array(vc), vertB = new Float32Array(vc), vertC = new Uint8Array(vc);
+  if (model.faceColors) {
+    for (let i = 0; i < fc; i++) {
+      const rgb = rsHslToRgb(model.faceColors[i] || 0);
+      for (const vi of model.faces[i]) { if (vi >= 0 && vi < vc) { vertR[vi] += rgb[0]; vertG[vi] += rgb[1]; vertB[vi] += rgb[2]; vertC[vi]++; } }
+    }
+  }
+  for (let i = 0; i < vc; i++) { const c = vertC[i] || 1; buf.writeFloatLE(vertR[i]/c, off); buf.writeFloatLE(vertG[i]/c, off+4); buf.writeFloatLE(vertB[i]/c, off+8); off += 12; }
+  for (let i = 0; i < fc; i++) { const f = model.faces[i]; buf.writeUInt16LE(f[0], off); buf.writeUInt16LE(f[1], off+2); buf.writeUInt16LE(f[2], off+4); off += 6; }
+  return JSON.stringify({
+    asset: { version: '2.0', generator: 'OpenScape' },
+    buffers: [{ uri: 'data:application/octet-stream;base64,' + buf.toString('base64'), byteLength: total }],
+    bufferViews: [{ buffer: 0, byteOffset: 0, byteLength: posBytes, target: 34962 }, { buffer: 0, byteOffset: posBytes, byteLength: colorBytes, target: 34962 }, { buffer: 0, byteOffset: posBytes + colorBytes, byteLength: idxPadded, target: 34963 }],
+    accessors: [{ bufferView: 0, componentType: 5126, count: vc, type: 'VEC3', min: [minX, minY, minZ], max: [maxX, maxY, maxZ] }, { bufferView: 1, componentType: 5126, count: vc, type: 'VEC3' }, { bufferView: 2, componentType: 5123, count: fc * 3, type: 'SCALAR' }],
+    materials: [{ pbrMetallicRoughness: { metallicFactor: 0, roughnessFactor: 0.9 }, doubleSided: true }],
+    meshes: [{ primitives: [{ attributes: { POSITION: 0, COLOR_0: 1 }, indices: 2, material: 0 }] }],
+    nodes: [{ mesh: 0 }], scenes: [{ nodes: [0] }], scene: 0
+  });
+}
+
+loadCodexCache();
+
 const server = http.createServer((req, res) => {
+  // ── Codex routes ──
+  if (req.url === '/codex') {
+    res.writeHead(301, { 'Location': '/codex/' });
+    res.end();
+    return;
+  }
+  if (req.url === '/codex/') {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(fs.readFileSync(path.join(CODEX_DIR, 'index.html'), 'utf8'));
+    return;
+  }
+  if (req.url.startsWith('/codex/')) {
+    const filePath = path.join(CODEX_DIR, req.url.slice(6));
+    if (fs.existsSync(filePath)) {
+      const ext = path.extname(filePath).toLowerCase();
+      const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript', '.json': 'application/json', '.png': 'image/png' };
+      res.writeHead(200, { 'Content-Type': types[ext] || 'application/octet-stream' });
+      res.end(fs.readFileSync(filePath));
+      return;
+    }
+    res.writeHead(404); res.end('Not found'); return;
+  }
+
+  // ── Codex API ──
+  if (req.url.startsWith('/api/')) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Content-Type', 'application/json');
+    const url = new URL(req.url, 'http://localhost');
+
+    if (url.pathname === '/api/stats') {
+      res.end(JSON.stringify({
+        items: codexIndex ? codexIndex.stats.totalItems : 0,
+        kits: codexIndex ? codexIndex.stats.totalKits : 0,
+        models: codexIndex ? codexIndex.stats.totalModels : 0,
+        categories: codexIndex ? Object.fromEntries(Object.entries(codexIndex.categories).filter(([k]) => k !== 'All').map(([k, v]) => [k, v.length])) : {},
+      }));
+      return;
+    }
+
+    if (url.pathname === '/api/browse') {
+      const cat = url.searchParams.get('category') || 'All';
+      const q = (url.searchParams.get('q') || '').toLowerCase();
+      const page = Math.max(1, parseInt(url.searchParams.get('page')) || 1);
+      const pageSize = 60;
+      let pool = (codexIndex && codexIndex.categories[cat]) || [];
+      if (q) pool = pool.filter(i => i.name && i.name.toLowerCase().includes(q));
+      pool.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      const total = pool.length, pages = Math.ceil(total / pageSize);
+      res.end(JSON.stringify({ results: pool.slice((page - 1) * pageSize, page * pageSize), total, page, pages }));
+      return;
+    }
+
+    const itemMatch = url.pathname.match(/^\/api\/item\/(\d+)$/);
+    if (itemMatch) {
+      const item = readCacheFile('items', itemMatch[1]);
+      res.end(JSON.stringify(item || { error: 'Not found' }));
+      return;
+    }
+
+    const modelMatch = url.pathname.match(/^\/api\/model\/(\d+)$/);
+    if (modelMatch) {
+      const model = readCacheFile('models', modelMatch[1]);
+      res.end(JSON.stringify(model || { error: 'Not found' }));
+      return;
+    }
+
+    const gltfMatch = url.pathname.match(/^\/api\/gltf\/(\d+)$/);
+    if (gltfMatch) {
+      const model = readCacheFile('models', gltfMatch[1]);
+      if (model) { res.setHeader('Content-Type', 'model/gltf+json'); res.end(modelToGltf(model)); }
+      else { res.writeHead(404); res.end(JSON.stringify({ error: 'Not found' })); }
+      return;
+    }
+
+    if (url.pathname === '/api/search') {
+      const q = (url.searchParams.get('q') || '').toLowerCase();
+      const all = codexIndex ? codexIndex.categories['All'] || [] : [];
+      res.end(JSON.stringify({ results: all.filter(i => i.name && i.name.toLowerCase().includes(q)).slice(0, 100) }));
+      return;
+    }
+
+    res.writeHead(404); res.end(JSON.stringify({ error: 'Unknown API' }));
+    return;
+  }
+
   // Serve static lib files (Three.js etc.)
   if (req.url.startsWith('/lib/')) {
     const libFile = path.join(__dirname, req.url);
@@ -2348,18 +2510,25 @@ const server = http.createServer((req, res) => {
     let html = fs.readFileSync(clientPath, 'utf8');
     if (name) {
       // Inject auto-login script
-      html = html.replace('</body>', `<script>window.autoLoginName = "${name.replace(/"/g, '')}";</script></body>`);
+      html = html.replace('<head>', `<head><script>window.autoLoginName = "${name.replace(/"/g, '')}";</script>`);
     }
     res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' });
     res.end(html);
     return;
   }
-  let file;
-  if (req.url === '/play') file = clientPath;
-  else if (req.url === '/map') file = mapPath;
-  else file = launcherPath;
-  res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' });
-  res.end(fs.readFileSync(file, 'utf8'));
+  if (req.url === '/play') {
+    res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' });
+    res.end(fs.readFileSync(clientPath, 'utf8'));
+    return;
+  }
+  if (req.url === '/map') {
+    res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' });
+    res.end(fs.readFileSync(mapPath, 'utf8'));
+    return;
+  }
+  // Default: redirect to codex (character creator = landing page)
+  res.writeHead(301, { 'Location': '/codex/' });
+  res.end();
 });
 
 // ── WebSocket Server ───────────────────────────────────────────────────────────

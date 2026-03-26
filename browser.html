@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenScape — Asset Codex</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e;
+    color: #c8c8d8;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  #app {
+    display: grid;
+    grid-template-columns: 200px 1fr 360px;
+    height: 100vh;
+  }
+
+  /* ── Left panel: Slots ── */
+  #left {
+    background: #1e1e32;
+    border-right: 1px solid #2a2a44;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 8px;
+    overflow-y: auto;
+  }
+
+  .mode-btns {
+    display: flex; gap: 6px; margin-bottom: 4px;
+  }
+  .mode-btn {
+    flex: 1; padding: 8px; text-align: center;
+    background: #2a2a44; border: 1px solid #3a3a55;
+    color: #8888aa; font: 500 11px 'JetBrains Mono', monospace;
+    cursor: pointer; border-radius: 4px; transition: all 0.15s;
+  }
+  .mode-btn:hover { background: #33335a; color: #aaaacc; }
+  .mode-btn.on { background: #4a4a7a; color: #fff; border-color: #6a6aaa; }
+
+  .gender-btns { display: flex; gap: 6px; margin-bottom: 8px; }
+  .gender-btn {
+    flex: 1; padding: 6px; text-align: center;
+    background: #2a2a44; border: 1px solid #3a3a55;
+    color: #8888aa; font: 11px 'JetBrains Mono', monospace;
+    cursor: pointer; border-radius: 4px; transition: all 0.15s;
+  }
+  .gender-btn.on { background: #4a4a7a; color: #fff; border-color: #6a6aaa; }
+
+  /* Equipment slot grid */
+  #slot-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 0;
+  }
+  .slot-row { display: flex; gap: 6px; justify-content: center; }
+
+  .slot {
+    width: 64px; height: 56px;
+    border: 2px dashed #3a3a55;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #7777aa;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    line-height: 1.2;
+  }
+  .slot:hover { border-color: #6666aa; color: #aaaadd; background: rgba(100,100,180,0.08); }
+  .slot.on {
+    border-style: solid;
+    border-color: #7070cc;
+    background: rgba(100,100,200,0.15);
+    color: #ccccff;
+    box-shadow: 0 0 8px rgba(100,100,200,0.2);
+  }
+
+  #left-label {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    color: #6666aa;
+    text-align: center;
+    letter-spacing: 1px;
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid #2a2a44;
+  }
+
+  /* ── Center: 3D Viewer ── */
+  #center {
+    position: relative;
+    background: linear-gradient(170deg, #3a3a48 0%, #2e2e3a 50%, #282834 100%);
+    display: flex;
+    flex-direction: column;
+  }
+  #center canvas {
+    flex: 1;
+    width: 100%;
+    cursor: grab;
+    display: block;
+  }
+  #center canvas:active { cursor: grabbing; }
+
+  #v-name {
+    position: absolute;
+    top: 14px; left: 18px;
+    font-family: 'Cinzel', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #e8e8f0;
+    text-shadow: 0 2px 16px rgba(0,0,0,0.8);
+    pointer-events: none;
+  }
+  #v-sub {
+    position: absolute;
+    top: 42px; left: 18px;
+    font-size: 11px;
+    color: #8888aa;
+    pointer-events: none;
+  }
+  #v-hint {
+    position: absolute;
+    bottom: 10px; left: 14px;
+    font-size: 9px;
+    color: rgba(255,255,255,0.25);
+    pointer-events: none;
+  }
+  #v-welcome {
+    position: absolute; inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.15);
+    font-family: 'Cinzel', serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+    gap: 8px;
+    pointer-events: none;
+  }
+  #v-welcome small { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0; }
+
+  /* Bottom toolbar */
+  #toolbar {
+    position: absolute;
+    bottom: 12px;
+    left: 50%; transform: translateX(-50%);
+    display: flex; gap: 6px;
+  }
+  .tool-btn {
+    padding: 6px 14px;
+    background: rgba(30,30,50,0.85);
+    border: 1px solid #3a3a55;
+    color: #aaaacc;
+    font: 10px 'JetBrains Mono', monospace;
+    cursor: pointer;
+    border-radius: 3px;
+    backdrop-filter: blur(4px);
+    transition: all 0.12s;
+  }
+  .tool-btn:hover { background: rgba(50,50,80,0.9); color: #fff; }
+  .tool-btn.on { background: rgba(70,70,120,0.9); color: #fff; border-color: #6a6aaa; }
+
+  /* ── Right panel: Item list ── */
+  #right {
+    background: #f0f0f0;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid #ddd;
+  }
+  #right-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid #ddd;
+    background: #fff;
+  }
+  #right-title {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 8px;
+  }
+  #right-search {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font: 12px 'JetBrains Mono', monospace;
+    color: #333;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #right-search:focus { border-color: #7070cc; }
+
+  #right-count {
+    padding: 6px 16px;
+    font-size: 10px;
+    color: #888;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #eee;
+    background: #fafafa;
+  }
+
+  #items {
+    flex: 1;
+    overflow-y: auto;
+  }
+  .entry {
+    padding: 10px 16px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .entry:hover { background: #e8e8f8; }
+  .entry.sel { background: #dde0f8; border-left: 3px solid #7070cc; padding-left: 13px; }
+  .entry-name { font-size: 12px; font-weight: 500; color: #333; }
+  .entry-meta { font-size: 10px; color: #999; margin-top: 2px; }
+
+  #right-pager {
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border-top: 1px solid #ddd;
+    background: #fff;
+  }
+  #right-pager button {
+    padding: 5px 14px;
+    background: #fff;
+    border: 1px solid #ccc;
+    color: #555;
+    font: 11px 'JetBrains Mono', monospace;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+  #right-pager button:hover:not(:disabled) { border-color: #7070cc; color: #7070cc; }
+  #right-pager button:disabled { opacity: 0.3; cursor: default; }
+  #right-pager span { font-size: 10px; color: #888; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Left: Equipment slots -->
+  <div id="left">
+    <div class="mode-btns">
+      <div class="mode-btn on" onclick="setMode('gear')">Gear</div>
+      <div class="mode-btn" onclick="setMode('character')">Character</div>
+    </div>
+    <div class="gender-btns">
+      <div class="gender-btn on" onclick="setGender('male')">&#9794; Male</div>
+      <div class="gender-btn" onclick="setGender('female')">&#9792; Female</div>
+    </div>
+
+    <div id="slot-grid">
+      <div class="slot-row"><div class="slot" data-cat="Head" onclick="pickSlot(this)">Head</div></div>
+      <div class="slot-row">
+        <div class="slot" data-cat="Cape" onclick="pickSlot(this)">Cape</div>
+        <div class="slot" data-cat="Amulet" onclick="pickSlot(this)">Amulet</div>
+      </div>
+      <div class="slot-row">
+        <div class="slot on" data-cat="Weapon" onclick="pickSlot(this)">Weapon</div>
+        <div class="slot" data-cat="Torso" onclick="pickSlot(this)">Torso</div>
+        <div class="slot" data-cat="Shield" onclick="pickSlot(this)">Shield</div>
+      </div>
+      <div class="slot-row"><div class="slot" data-cat="Legs" onclick="pickSlot(this)">Legs</div></div>
+      <div class="slot-row">
+        <div class="slot" data-cat="Hands" onclick="pickSlot(this)">Hands</div>
+        <div class="slot" data-cat="Boots" onclick="pickSlot(this)">Boots</div>
+      </div>
+      <div class="slot-row">
+        <div class="slot" data-cat="Ring" onclick="pickSlot(this)">Ring</div>
+        <div class="slot" data-cat="Ammo" onclick="pickSlot(this)">Ammo</div>
+      </div>
+    </div>
+
+    <div id="left-label">OpenScape Asset Codex</div>
+  </div>
+
+  <!-- Center: 3D Viewer -->
+  <div id="center">
+    <canvas id="vc"></canvas>
+    <div id="v-name"></div>
+    <div id="v-sub"></div>
+    <div id="v-hint">Drag to rotate · Scroll to zoom</div>
+    <div id="v-welcome">Select an item<small>from the list on the right</small></div>
+    <div id="toolbar">
+      <div class="tool-btn" onclick="toggleWireframe()">Wireframe</div>
+      <div class="tool-btn" onclick="toggleAutoRotate()">Auto-Rotate</div>
+    </div>
+  </div>
+
+  <!-- Right: Item list -->
+  <div id="right">
+    <div id="right-header">
+      <div id="right-title">Browsing: Weapon</div>
+      <input id="right-search" type="text" placeholder="Search in Weapon..." autocomplete="off" spellcheck="false">
+    </div>
+    <div id="right-count">
+      <span id="rc-count">—</span>
+      <span id="rc-page">—</span>
+    </div>
+    <div id="items"></div>
+    <div id="right-pager">
+      <button onclick="pg(-1)" id="ppb">&#9664;</button>
+      <span id="ppi">-</span>
+      <button onclick="pg(1)" id="ppn">&#9654;</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+let activeCat = 'Weapon', query = '', curPage = 1, results = [], total = 0, pages = 0;
+let selected = null, wireframe = false, autoRot = true;
+let sc, cam, ren, ctrl, mdl, grid;
+
+// ── 3D ──
+function init3D() {
+  const c = document.getElementById('vc');
+  const ctr = document.getElementById('center');
+  const w = ctr.clientWidth, h = ctr.clientHeight;
+
+  sc = new THREE.Scene();
+  sc.background = new THREE.Color(0x34343e);
+
+  cam = new THREE.PerspectiveCamera(34, w / h, 0.01, 100);
+  cam.position.set(0, 0.8, 2.8);
+
+  ren = new THREE.WebGLRenderer({ canvas: c, antialias: true });
+  ren.setSize(w, h);
+  ren.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+  ctrl = new THREE.OrbitControls(cam, c);
+  ctrl.enableDamping = true;
+  ctrl.dampingFactor = 0.08;
+  ctrl.autoRotate = true;
+  ctrl.autoRotateSpeed = 1.5;
+
+  sc.add(new THREE.AmbientLight(0xffffff, 0.75));
+  sc.add(new THREE.HemisphereLight(0xddeeff, 0x887766, 0.5));
+  const key = new THREE.DirectionalLight(0xfff8ee, 1.0);
+  key.position.set(3, 5, 3); sc.add(key);
+  const fill = new THREE.DirectionalLight(0xaabbdd, 0.4);
+  fill.position.set(-3, 2, -2); sc.add(fill);
+  const rim = new THREE.DirectionalLight(0xffeedd, 0.3);
+  rim.position.set(0, 0, -4); sc.add(rim);
+
+  grid = new THREE.GridHelper(3, 15, 0x505060, 0x44444e);
+  grid.position.y = -0.01; sc.add(grid);
+
+  window.addEventListener('resize', () => {
+    const w2 = ctr.clientWidth, h2 = ctr.clientHeight;
+    cam.aspect = w2 / h2; cam.updateProjectionMatrix();
+    ren.setSize(w2, h2);
+  });
+
+  (function anim() { requestAnimationFrame(anim); ctrl.update(); ren.render(sc, cam); })();
+}
+
+function loadModel(modelId) {
+  const welcome = document.getElementById('v-welcome');
+  if (mdl) { sc.remove(mdl); mdl = null; }
+  if (!modelId) { welcome.style.display = 'flex'; return; }
+  welcome.style.display = 'none';
+
+  new THREE.GLTFLoader().load('/api/gltf/' + modelId, g => {
+    mdl = g.scene;
+    mdl.traverse(ch => {
+      if (ch.isMesh) {
+        if (ch.geometry) ch.geometry.computeVertexNormals();
+        if (wireframe) ch.material = ch.material.clone(), ch.material.wireframe = true;
+      }
+    });
+    const box = new THREE.Box3().setFromObject(mdl);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const mx = Math.max(size.x, size.y, size.z) || 1;
+    const s = 1.2 / mx;
+    mdl.scale.setScalar(s);
+    mdl.position.sub(center.multiplyScalar(s));
+    mdl.position.y += size.y * s * 0.5;
+    sc.add(mdl);
+    ctrl.reset();
+    cam.position.set(0, 0.8, 2.8);
+  }, undefined, () => {
+    document.getElementById('v-sub').textContent = 'Model not found';
+  });
+}
+
+function toggleWireframe() {
+  wireframe = !wireframe;
+  document.querySelectorAll('.tool-btn')[0].classList.toggle('on', wireframe);
+  if (mdl) mdl.traverse(ch => { if (ch.isMesh) { ch.material = ch.material.clone(); ch.material.wireframe = wireframe; } });
+}
+
+function toggleAutoRotate() {
+  autoRot = !autoRot;
+  ctrl.autoRotate = autoRot;
+  document.querySelectorAll('.tool-btn')[1].classList.toggle('on', autoRot);
+}
+
+// ── Data ──
+async function fetchData() {
+  const p = new URLSearchParams({ category: activeCat, page: curPage });
+  if (query) p.set('q', query);
+  const r = await (await fetch('/api/browse?' + p)).json();
+  results = r.results || []; total = r.total || 0; pages = r.pages || 0;
+  renderList();
+}
+
+function renderList() {
+  const list = document.getElementById('items');
+  if (!results.length) {
+    list.innerHTML = '<div style="padding:30px;text-align:center;color:#999">No items found</div>';
+  } else {
+    list.innerHTML = results.map((it, i) => {
+      const sel = selected && selected.id === it.id ? ' sel' : '';
+      const genders = it.availableGenders ? it.availableGenders.join(', ') : '';
+      return `<div class="entry${sel}" onclick="pick(${i})">
+        <div class="entry-name">${it.name} (ID: ${it.id})</div>
+        <div class="entry-meta">Item ${it.id}${it.is2H ? ' · 2H' : ''}</div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('rc-count').textContent = total.toLocaleString() + ' found';
+  document.getElementById('rc-page').textContent = 'Page ' + curPage + ' of ' + pages;
+  document.getElementById('ppb').disabled = curPage <= 1;
+  document.getElementById('ppn').disabled = curPage >= pages;
+  document.getElementById('ppi').textContent = curPage + '/' + pages;
+}
+
+async function pick(i) {
+  selected = results[i];
+  document.getElementById('v-name').textContent = selected.name;
+  document.getElementById('v-sub').textContent = 'ID: ' + selected.id + (selected.is2H ? ' · Two-handed' : '');
+
+  let detail = null;
+  try { detail = await (await fetch('/api/item/' + selected.id)).json(); } catch(e) {}
+
+  let mid = null;
+  if (detail && detail.models && detail.models.length > 0) {
+    const mm = detail.models.find(m => m.type === 'male') || detail.models[0];
+    if (mm && mm.subModels && mm.subModels.length > 0) mid = mm.subModels[0].id;
+  }
+  loadModel(mid);
+
+  document.querySelectorAll('.entry').forEach((el, j) => el.classList.toggle('sel', j === i));
+}
+
+function pickSlot(el) {
+  const cat = el.dataset.cat;
+  activeCat = cat;
+  curPage = 1;
+  query = '';
+  document.getElementById('right-search').value = '';
+  document.querySelectorAll('.slot').forEach(s => s.classList.toggle('on', s.dataset.cat === cat));
+  document.getElementById('right-title').textContent = 'Browsing: ' + cat;
+  document.getElementById('right-search').placeholder = 'Search in ' + cat + '...';
+  fetchData();
+}
+
+function setMode(mode) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('on', b.textContent.toLowerCase() === mode));
+  if (mode === 'character') {
+    // Switch to character kit browsing
+    document.getElementById('slot-grid').innerHTML = `
+      <div class="slot-row"><div class="slot on" data-cat="Hair" onclick="pickSlot(this)">Hair</div></div>
+      <div class="slot-row"><div class="slot" data-cat="Jaw" onclick="pickSlot(this)">Jaw</div></div>
+      <div class="slot-row"><div class="slot" data-cat="Arms" onclick="pickSlot(this)">Arms</div></div>
+      <div class="slot-row"><div class="slot" data-cat="Torso" onclick="pickSlot(this)">Torso</div></div>
+      <div class="slot-row"><div class="slot" data-cat="Legs" onclick="pickSlot(this)">Legs</div></div>
+      <div class="slot-row"><div class="slot" data-cat="Hands" onclick="pickSlot(this)">Hands</div></div>
+      <div class="slot-row"><div class="slot" data-cat="Boots" onclick="pickSlot(this)">Boots</div></div>
+    `;
+    activeCat = 'Hair'; curPage = 1;
+    document.getElementById('right-title').textContent = 'Browsing: Hair';
+    document.getElementById('right-search').placeholder = 'Search in Hair...';
+    fetchData();
+  } else {
+    document.getElementById('slot-grid').innerHTML = `
+      <div class="slot-row"><div class="slot" data-cat="Head" onclick="pickSlot(this)">Head</div></div>
+      <div class="slot-row">
+        <div class="slot" data-cat="Cape" onclick="pickSlot(this)">Cape</div>
+        <div class="slot" data-cat="Amulet" onclick="pickSlot(this)">Amulet</div>
+      </div>
+      <div class="slot-row">
+        <div class="slot on" data-cat="Weapon" onclick="pickSlot(this)">Weapon</div>
+        <div class="slot" data-cat="Torso" onclick="pickSlot(this)">Torso</div>
+        <div class="slot" data-cat="Shield" onclick="pickSlot(this)">Shield</div>
+      </div>
+      <div class="slot-row"><div class="slot" data-cat="Legs" onclick="pickSlot(this)">Legs</div></div>
+      <div class="slot-row">
+        <div class="slot" data-cat="Hands" onclick="pickSlot(this)">Hands</div>
+        <div class="slot" data-cat="Boots" onclick="pickSlot(this)">Boots</div>
+      </div>
+      <div class="slot-row">
+        <div class="slot" data-cat="Ring" onclick="pickSlot(this)">Ring</div>
+        <div class="slot" data-cat="Ammo" onclick="pickSlot(this)">Ammo</div>
+      </div>
+    `;
+    activeCat = 'Weapon'; curPage = 1;
+    document.getElementById('right-title').textContent = 'Browsing: Weapon';
+    document.getElementById('right-search').placeholder = 'Search in Weapon...';
+    fetchData();
+  }
+}
+
+function setGender(g) {
+  document.querySelectorAll('.gender-btn').forEach(b => b.classList.toggle('on', b.textContent.toLowerCase().includes(g)));
+}
+
+function pg(d) { curPage = Math.max(1, Math.min(pages, curPage + d)); fetchData(); }
+
+// ── Init ──
+let st;
+document.getElementById('right-search').addEventListener('input', e => {
+  clearTimeout(st);
+  st = setTimeout(() => { query = e.target.value.trim(); curPage = 1; fetchData(); }, 300);
+});
+
+init3D();
+fetchData();
+document.querySelectorAll('.tool-btn')[1].classList.add('on'); // auto-rotate on by default
+</script>
+</body>
+</html>

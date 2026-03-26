@@ -1484,7 +1484,7 @@
       </div>
 
       <div class="chargen-col">
-        <h3>COLOUR</h3>
+        <h3>COLOR</h3>
         <div class="chargen-color-row">
           <label>Hair</label>
           <input type="color" id="cg-hair-color" value="#6B3A2A" oninput="chargenUpdatePreview()">
@@ -4694,7 +4694,7 @@ const chargenState = {
 
 // Chargen 3D preview
 let cgScene, cgCamera, cgRenderer, cgModel, cgAnimId;
-let cgRotation = 0, cgDragging = false, cgLastX = 0;
+let cgRotation = Math.PI, cgDragging = false, cgLastX = 0;
 
 function initChargen3D() {
   if (cgScene) return; // already init
@@ -5006,8 +5006,9 @@ function chargenApplyColors() {
 }
 
 function chargenUpdatePreview() {
-  // Colors are baked in vertex data — no need to reload models
   chargenSyncColors();
+  // Colors saved to appearance data but not applied to 3D models yet
+  // (needs proper models with separate material slots per body region)
 }
 
 function chargenConfirm() {
@@ -5029,10 +5030,22 @@ function hexToRgb(hex) {
 // Focus the username input on load
 setTimeout(() => document.getElementById('login-input').focus(), 100);
 
-// Auto-login if name provided via URL
+// Auto-login if name provided via URL (from codex character creator)
 if (window.autoLoginName) {
+  // Hide login screen immediately — no flash
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('conn').style.display = 'block';
   document.getElementById('login-input').value = window.autoLoginName;
-  setTimeout(doLogin, 200);
+  // Check for character data from codex
+  try {
+    const charData = sessionStorage.getItem('openscape_character');
+    if (charData) {
+      window.codexCharacter = JSON.parse(charData);
+      sessionStorage.removeItem('openscape_character');
+    }
+  } catch(e) {}
+  playerUsername = window.autoLoginName;
+  connect();
 }
 
 window.__cp=(window.__cp||[]);window.__cp.push('WS'); // ── WebSocket ──────────────────────────────────────────────────────────────────
@@ -5090,6 +5103,20 @@ function handleServerMsg(msg) {
       if (msg.name) { document.getElementById('my-name-val').textContent = msg.name; myDisplayName = msg.name; }
       if (typeof playerUsername !== 'undefined' && playerUsername) {
         sendMsg({ t: 'set_name', name: playerUsername });
+      }
+      // Send codex character data if coming from character creator
+      if (window.codexCharacter) {
+        const cc = window.codexCharacter;
+        sendMsg({ t: 'set_appearance', appearance: {
+          bodyType: cc.gender === 'female' ? 'B' : 'A',
+          head: 0, jaw: 0, torso: 0, arms: 0, hands: 0, legs: 0, feet: 0,
+          hairColor: '#6B3A2A', torsoColor: '#8B7355', legsColor: '#4A5568',
+          feetColor: '#5C4033', skinColor: '#D4A574',
+          codexModelIds: cc.modelIds || [],
+        }});
+        // Store model IDs for 3D rendering
+        window.codexModelIds = cc.modelIds || [];
+        window.codexCharacter = null;
       }
       break;
     case 'chunk': {
@@ -5214,7 +5241,7 @@ function handleServerMsg(msg) {
       if (msg.layer !== undefined) { currentLayer = msg.layer; document.getElementById('layer-display').textContent = `L:${currentLayer}`; chunkCache.clear(); }
       break;
     case 'need_chargen':
-      showChargen();
+      // Old chargen disabled — codex at /codex/ handles this now
       break;
     case 'appearance':
       myAppearance = msg.appearance;
@@ -10254,16 +10281,12 @@ function updateEntities3D() {
     const sh = getTerrainHeight(Math.floor(sx), Math.floor(sy));
 
     if (!player3dMeshes.has(p.id)) {
-      // Create group for composited kit parts
       const group = new THREE.Group();
       group.userData.isFallback = true;
       scene3d.add(group);
       player3dMeshes.set(p.id, group);
 
-      // Load kit models based on player appearance
-      const playerId = p.id;
-      const pApp = p.a ? { bodyType: p.a.bt || 'A', torso: 0, arms: 0, hands: 0, legs: 0, feet: 0, jaw: 0 } : null;
-      loadPlayerKitModels(playerId, pApp, group);
+      loadCodexPlayerModel(group, [230, 28515, 26632, 176, 28285, 181]);
 
       const kp = knownPlayers.find(k => k.id === p.id);
       const pName = kp ? kp.name : `Player ${p.id}`;
@@ -10294,8 +10317,11 @@ function updateEntities3D() {
     myPlayer3dMesh.userData.isFallback = true;
     scene3d.add(myPlayer3dMesh);
 
-    // Load my kit models
-    loadPlayerKitModels('me', myAppearance, myPlayer3dMesh);
+    // Load player model from codex asset-cache
+    const codexIds = (window.codexModelIds && window.codexModelIds.length > 0)
+      ? window.codexModelIds
+      : [230, 28515, 26632, 176, 28285, 181]; // default male kit: hair, torso, arms, hands, legs, feet
+    loadCodexPlayerModel(myPlayer3dMesh, codexIds);
   }
   myPlayer3dMesh.position.set(myX + 0.5, myH, -(myY + 0.5));
 }
@@ -10304,6 +10330,165 @@ let playerMesh3d = null; // kept for compat
 
 // Cache for in-game kit models
 const kitModelCache = {};
+
+// Animation system
+const animGltfCache = {}; // name → { scene, clips }
+const playerAnimMixers = new Map(); // playerId → AnimationMixer
+const playerAnimState = new Map(); // playerId → { current, mixer, mesh }
+let myAnimState = null;
+let animClock = new (typeof THREE !== 'undefined' ? THREE.Clock : Object)();
+
+const ANIM_FILES = {
+  idle: 'anim_808_idle',
+  walk: 'anim_819_walk',
+  run: 'anim_824_run',
+  punch: 'anim_422_punch',
+  kick: 'anim_423_kick',
+  slash: 'anim_412_slash',
+  chop: 'anim_390_chop',
+  bow: 'anim_7618_bow',
+  magic: 'anim_711_magic',
+  death: 'anim_836_death',
+  mine: 'anim_2561_mine',
+  fish: 'anim_896_fish',
+};
+
+function loadAnimatedPlayer(playerId, group, startAnim) {
+  const animName = startAnim || 'idle';
+  const fileName = ANIM_FILES[animName];
+  if (!fileName) return;
+
+  const loader = gltfLoader || (typeof THREE !== 'undefined' && THREE.GLTFLoader ? new THREE.GLTFLoader() : null);
+  if (!loader) return;
+
+  const doLoad = (cached) => {
+    // Remove old children
+    while (group.children.length) group.remove(group.children[0]);
+
+    const model = cached.scene.clone();
+    model.traverse(child => {
+      if (child.isMesh && child.geometry) child.geometry.computeVertexNormals();
+    });
+    group.add(model);
+    group.rotation.y = Math.PI;
+    group.userData.isFallback = false;
+
+    // Set up animation mixer
+    if (cached.clips && cached.clips.length > 0) {
+      const mixer = new THREE.AnimationMixer(model);
+      const clip = cached.clips[0];
+      const action = mixer.clipAction(clip);
+      action.play();
+
+      const state = { current: animName, mixer, model, group };
+      if (playerId === 'me') {
+        myAnimState = state;
+      } else {
+        playerAnimState.set(playerId, state);
+      }
+    }
+  };
+
+  if (animGltfCache[fileName]) {
+    doLoad(animGltfCache[fileName]);
+  } else {
+    loader.load(`/models/${fileName}.gltf`, (gltf) => {
+      animGltfCache[fileName] = { scene: gltf.scene, clips: gltf.animations };
+      doLoad(animGltfCache[fileName]);
+    }, undefined, () => {
+      // Fallback to kit models if animation GLTF not found
+      loadPlayerKitModels(playerId, null, group);
+    });
+  }
+}
+
+function switchPlayerAnim(playerId, animName) {
+  const state = playerId === 'me' ? myAnimState : playerAnimState.get(playerId);
+  if (!state || state.current === animName) return;
+  if (!ANIM_FILES[animName]) return;
+
+  const group = state.group;
+  loadAnimatedPlayer(playerId, group, animName);
+}
+
+function updateAnimMixers() {
+  const delta = animClock.getDelta();
+  if (myAnimState && myAnimState.mixer) myAnimState.mixer.update(delta);
+  for (const [, state] of playerAnimState) {
+    if (state.mixer) state.mixer.update(delta);
+  }
+}
+
+// Load player model from codex cache model IDs
+function loadCodexPlayerModel(group, modelIds) {
+  group.rotation.y = Math.PI;
+
+  // Fetch each model as JSON and build meshes manually (avoids CORS issues with GLTFLoader)
+  for (const mid of modelIds) {
+    fetch('/api/model/' + mid)
+      .then(r => r.json())
+      .then(model => {
+        if (!model || !model.vertices) return;
+        const scale = 1 / 128;
+        const geo = new THREE.BufferGeometry();
+        const vc = model.vertices.length;
+        const positions = new Float32Array(vc * 3);
+        for (let i = 0; i < vc; i++) {
+          positions[i*3] = model.vertices[i][0] * scale;
+          positions[i*3+1] = -model.vertices[i][1] * scale;
+          positions[i*3+2] = model.vertices[i][2] * scale;
+        }
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+        // Vertex colors from face colors
+        if (model.faceColors && model.faces) {
+          const colors = new Float32Array(vc * 3);
+          const counts = new Uint8Array(vc);
+          for (let i = 0; i < model.faces.length; i++) {
+            const hsl = model.faceColors[i] || 0;
+            const rgb = rsHslToRgbThree(hsl);
+            for (const vi of model.faces[i]) {
+              if (vi >= 0 && vi < vc) {
+                colors[vi*3] += rgb[0]; colors[vi*3+1] += rgb[1]; colors[vi*3+2] += rgb[2];
+                counts[vi]++;
+              }
+            }
+          }
+          for (let i = 0; i < vc; i++) {
+            const c = counts[i] || 1;
+            colors[i*3] /= c; colors[i*3+1] /= c; colors[i*3+2] /= c;
+          }
+          geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        }
+
+        // Faces
+        const indices = [];
+        for (const f of model.faces) indices.push(f[0], f[1], f[2]);
+        geo.setIndex(indices);
+        geo.computeVertexNormals();
+
+        const mat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        const mesh = new THREE.Mesh(geo, mat);
+        group.add(mesh);
+        group.userData.isFallback = false;
+      })
+      .catch(e => console.warn('Codex model', mid, 'failed:', e));
+  }
+}
+
+function rsHslToRgbThree(hsl) {
+  const h = (hsl >> 10) & 0x3F, s = (hsl >> 7) & 0x07, l = hsl & 0x7F;
+  const hue = h / 63, sat = s / 7, lit = l / 127;
+  const c = (1 - Math.abs(2 * lit - 1)) * sat;
+  const x = c * (1 - Math.abs((hue * 6) % 2 - 1));
+  const m = lit - c / 2;
+  let r, g, b;
+  const hi = Math.floor(hue * 6) % 6;
+  if (hi === 0) { r=c; g=x; b=0; } else if (hi === 1) { r=x; g=c; b=0; }
+  else if (hi === 2) { r=0; g=c; b=x; } else if (hi === 3) { r=0; g=x; b=c; }
+  else if (hi === 4) { r=x; g=0; b=c; } else { r=c; g=0; b=x; }
+  return [Math.max(0,Math.min(1,r+m)), Math.max(0,Math.min(1,g+m)), Math.max(0,Math.min(1,b+m))];
+}
 
 // Load kit GLTF models into a player group based on appearance
 function loadPlayerKitModels(playerId, appearance, group) {
@@ -10349,7 +10534,7 @@ function loadPlayerKitModels(playerId, appearance, group) {
           part.userData.kitSlot = slot;
           group.add(part);
           group.userData.isFallback = false;
-        }, undefined, () => {});
+          }, undefined, () => {});
       }
     }
   }
